@@ -42,18 +42,18 @@ end;
 procedure ExtractFilePath(pAPI:PAPIRec; szFileName:PWideChar);
 var
   I: Integer;
-  strSlash:WideChar;
+  strSlash:Array[0..1] of WideChar;
 begin
-  strSlash := '\';
-  I := LastDelimiter(pAPI, szFilename, strSlash) * 2;
+  strSlash[0] := '\';strSlash[0] := #0;
+  I := LastDelimiter(pAPI, szFilename, strSlash[0]) * 2;
   ZeroMemory(Pointer(DWORD(szFileName) + i), (lstrlenW(szFileName) * 2) - i);
 end;
 
 function GetCurrentDir(pAPI:PAPIRec):PWideChar;
 var
-  strSlash:WideChar;
+  strSlash:Array[0..1] of WideChar;
 begin
-  strSlash := '\';
+  strSlash[0] := '\';strSlash[0] := #0;
   Result := AllocMem(pAPI, MAX_PATH * 2);
   if Result <> nil then
   begin
@@ -151,12 +151,16 @@ begin
   end;
   @pVirtualAlloc := GetProcAddressEx(hKernel32, $09CE0D4A, 12);
   pAPI := pVirtualAlloc(nil, SizeOf(TAPIRec) , MEM_COMMIT, PAGE_READWRITE);
-  pAPI.xExitProcess := GetProcAddressEx(hKernel32, $251097CC, 11);
-  pAPI.xLoadLibraryA := GetProcAddressEx(hKernel32, $3FC1BD8D, 12);
   pAPI.hKernel32 := hKernel32;
+  pAPI.xLoadLibraryA := GetProcAddressEx(hKernel32, $3FC1BD8D, 12);
   LoadLib(pAPI);
+  pAPI.xExitProcess := GetProcAddressEx(hKernel32, $251097CC, 11);
   pAPI.xMessageBoxA := GetProcAddressEx(pAPI.hUser32, $572D5D8E, 11);
-
+  pAPI.xVirtualAlloc := pVirtualAlloc;
+  pAPI.xGetModuleFileNameW := GetProcAddressEx(hKernel32, $FC6B42F1, 18);
+  pAPI.xlstrlenW := GetProcAddressEx(hKernel32, $1DDA9F5D, 8);
+  pAPI.xlstrcmpW := GetProcAddressEx(hKernel32, $9FEBE16C, 8);
+  pAPI.xlstrcatW := GetProcAddressEx(hKernel32, $F29DDD0C, 8);
   pAPI.xMessageBoxA(0, nil, nil, 0);
   pAPI.xExitProcess(0);
 end;
