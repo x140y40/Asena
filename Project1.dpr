@@ -10,8 +10,59 @@ type
     xLoadLibraryA:function(lpLibFileName: PChar): Cardinal; stdcall;
     xMessageBoxA:function(hWnd: HWND; lpText, lpCaption: PAnsiChar; uType: UINT): Integer; stdcall;
     xVirtualAlloc:function(lpvAddress: Pointer; dwSize, flAllocationType, flProtect: DWORD): Pointer; stdcall;
+    xGetModuleFileNameW:function(hModule: HINST; lpFilename: PWideChar; nSize: DWORD): DWORD; stdcall;
+    xlstrlenW:function(lpString: PWideChar): Integer; stdcall;
+    xlstrcmpW:function(lpString1, lpString2: PWideChar): Integer; stdcall;
+    xlstrcatW:function(lpString1, lpString2: PWideChar): PWideChar; stdcall;
   end;
   PAPIRec = ^TAPIRec;
+  
+function AllocMem(pAPI:PAPIRec; dwSize:Cardinal):Pointer;
+begin
+  Result := pAPI.xVirtualAlloc(nil, dwSize, MEM_COMMIT, PAGE_READWRITE);
+end;
+
+function LastDelimiter(pAPI:PAPIRec; S: PWideChar; Delimiter: WideChar): Integer;
+var
+  i: Integer;
+begin
+  result := -1;
+  i := pAPI.xlstrlenW(s);
+  if (i = 0) then
+    Exit;
+  while S[i] <> Delimiter do
+  begin
+    if i < 0 then
+      break;
+    dec(i);
+  end;
+  result := i;
+end;
+
+procedure ExtractFilePath(pAPI:PAPIRec; szFileName:PWideChar);
+var
+  I: Integer;
+  strSlash:WideChar;
+begin
+  strSlash := '\';
+  I := LastDelimiter(pAPI, szFilename, strSlash) * 2;
+  ZeroMemory(Pointer(DWORD(szFileName) + i), (lstrlenW(szFileName) * 2) - i);
+end;
+
+function GetCurrentDir(pAPI:PAPIRec):PWideChar;
+var
+  strSlash:WideChar;
+begin
+  strSlash := '\';
+  Result := AllocMem(pAPI, MAX_PATH * 2);
+  if Result <> nil then
+  begin
+    pAPI.xGetModuleFileNameW(0, Result, MAX_PATH * 2);
+    ExtractFilePath(pAPI, Result);
+    if pAPI.xlstrcmpW(PWideChar(DWORD(Result) + ((pAPI.xlstrlenW(Result) - 1) * 2) ), @strSlash) <> 0 then
+      pAPI.xlstrcatW(Result, @strSlash);
+  end;
+end;
 
 procedure CopyMySelf(pGetProcAddress, pGetModuleHandle:Cardinal);
 begin
