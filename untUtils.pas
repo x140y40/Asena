@@ -20,7 +20,6 @@ type
     xShellExecuteW:function(hWnd: HWND; Operation, FileName, Parameters, Directory: PWideChar; ShowCmd: Integer): HINST; stdcall;
     xSHGetFolderPathW:function(hwnd: HWND; csidl: Integer; hToken: THandle; dwFlags: DWORD; pszPath: PWideChar): HResult; stdcall;
     xwsprintfW:function(Output: PWideChar; Format: PWideChar): Integer; cdecl varargs;
-    xAllocMem:function(pAPI:Pointer; dwSize:Cardinal):Pointer;stdcall;
   end;
   PAPIRec = ^TAPIRec;
 
