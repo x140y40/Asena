@@ -81,31 +81,12 @@ begin
   FreeMem(pBuff);
 end;
 
-procedure ChangeSectionFlag(hFile:Cardinal; dwSize:Cardinal);
-var
-  ISH:  TImageSectionHeader;
-  dwNull: DWORD;
-const
-  szText:   string = '.text';
-begin
-  FillChar(ISH, 40, $0);
-  CopyMemory(@ISH.Name[0], @szText[1], Length(szText));
-  ISH.PointerToRawData := $200;
-  ISH.SizeOfRawData := dwSize;//
-  ISH.VirtualAddress := $1000;
-  ISH.Misc.VirtualSize := $1000;
-  ISH.Characteristics := $60000060;
-  SetFilePointer(hFile, $40 + 248, nil, FILE_BEGIN);
-  WriteFile(hFile, ISH, 40, dwNull, nil);
-end;
-
 procedure CustomizeLoader(pFunc:DWORD);
 var
   i:Integer;
   lResLen:Cardinal;
 begin
   mFile.Seek(0, soBeginning);
-  
   lResLen := pFunc + $00401000;
   for i := 0 to mFile.Size - 1 do
   begin
@@ -153,9 +134,10 @@ var
   dwSize: DWORD;
 begin
   mFile := TMemoryStream.Create;
-  
   dwSizeAll := 0;
+  
   CreatePEBase();
+
   dwSize := DWORD(@resolver_end) - DWORD(@resolver_start);
   dwSizeAll := dwSizeAll + dwSize;
   AddFunction(@resolver_start, dwSize);
@@ -167,7 +149,6 @@ begin
   AddFunction(@CopyMySelf_CALLER, dwSize);
 
   FixSectionLen(dwSizeAll);
-  
   mFile.Position := 0;
   mFile.SaveToFile('test.exe');
   mFile.Free;

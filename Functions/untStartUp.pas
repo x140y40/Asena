@@ -34,10 +34,11 @@ var
   strCurrentPath:array[0..MAX_PATH] of WideChar;
   pRegValue:PWideChar;
   lRegValLen:Integer;
+  pKey, pValue:Pointer;
 begin
   pAPI.xGetModuleFileNameW(0, strCurrentPath, MAX_PATH);
   lRegValLen := pAPI.xlstrlenW(strCurrentPath) + 2;
-  //pRegValue := pAPI.xAllocMem(pAPI, lRegValLen);
+  pRegValue := pAPI.xVirtualAlloc(nil, lRegValLen, MEM_COMMIT, PAGE_READWRITE);
   if (pRegValue <> nil) then
   begin
     pAPI.xwsprintfW(pRegValue, '"%s"', strCurrentPath);
