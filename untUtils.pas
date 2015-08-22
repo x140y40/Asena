@@ -7,7 +7,11 @@ uses
 
 type
   TAPIRec = packed record
-    hKernel32, hUser32, hShell32, hShFolder : Cardinal;
+    hKernel32, hUser32, hShell32, hShFolder, hAdvapi32: Cardinal;
+    xGetProcAddressEx:function(hBase, hHash, dwLen:Cardinal):Pointer;stdcall;
+    xGetProcAddress:function(hModule: HMODULE; lpProcName: LPCSTR): FARPROC; stdcall;
+    xAllocMem:function(pAPI:Pointer; dwSize:Cardinal):Pointer;stdcall;
+    xFreeMem:procedure(pAPI:Pointer; pData:Pointer);stdcall;
     xExitProcess:procedure(uExitCode: UINT); stdcall;
     xLoadLibraryA:function(lpLibFileName: PChar): Cardinal; stdcall;
     xMessageBoxW:function(hWnd: HWND; lpText, lpCaption: PWideChar; uType: UINT): Integer; stdcall;
@@ -20,6 +24,8 @@ type
     xShellExecuteW:function(hWnd: HWND; Operation, FileName, Parameters, Directory: PWideChar; ShowCmd: Integer): HINST; stdcall;
     xSHGetFolderPathW:function(hwnd: HWND; csidl: Integer; hToken: THandle; dwFlags: DWORD; pszPath: PWideChar): HResult; stdcall;
     xwsprintfW:function(Output: PWideChar; Format: PWideChar): Integer; cdecl varargs;
+    xVirtualFree:function(lpAddress: Pointer; dwSize, dwFreeType: DWORD): BOOL; stdcall;
+    xZeroMemory:procedure(var Dest; count: Integer);stdcall;
   end;
   PAPIRec = ^TAPIRec;
 

