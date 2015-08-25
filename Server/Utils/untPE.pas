@@ -32,7 +32,7 @@ implementation
 constructor TPEFile.Create;
 begin
   mFile := TMemoryStream.Create;
-  //dwSizeAll := 0;
+  dwSizeAll := 0;
 end;
 
 procedure TPEFile.CreatePEBase;

