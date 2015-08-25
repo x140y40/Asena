@@ -10,11 +10,12 @@ Done
 - installation routine
 - startup routine
 - creation of PE-file
+- connection protocol
+- client/server
 
 Todo
 --------------
-- add winsock-connection
-- create client/server
+- shellcode-parser/packager
 - upgrade to Delphi XE 8
 - 64-bit support
 - documentation
