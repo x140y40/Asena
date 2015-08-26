@@ -13,10 +13,10 @@ Done
 - creation of PE-file
 - connection protocol
 - client/server
+- upgrade to Delphi XE 8
 
 Todo
 --------------
 - shellcode-parser/packager
-- upgrade to Delphi XE 8
 - 64-bit support
 - documentation
