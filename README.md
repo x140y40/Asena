@@ -7,6 +7,7 @@ Asena is a framework to create position independant shellcode. It can also used 
 
 Done
 --------------
+- mutex-check
 - installation routine
 - startup routine
 - creation of PE-file
