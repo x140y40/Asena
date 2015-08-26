@@ -9,7 +9,8 @@ uses
   Sysutils,
   Classes,
   untPE in 'Utils\untPE.pas',
-  untConnection in 'Functions\untConnection.pas';
+  untConnection in 'Functions\untConnection.pas',
+  untMutex in 'Functions\untMutex.pas';
 
 var
   mPE:TPEFile;
@@ -19,9 +20,6 @@ var
   dwSizeAll:DWORD;
   dwSize: DWORD;
 begin
-  //resolver_start();
-  //ConnectionLoop_CALLER();
-  //ExitProcess(0);
   mPE := TPEFile.Create;
   mPE.CreatePEBase;
 
