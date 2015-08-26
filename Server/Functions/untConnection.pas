@@ -180,13 +180,13 @@ end;
 function ResolveWinsockAPI(pAPI:PAPIRec):PConnRec;
 var
   strWinsock:Array[0..11] of Char;
-  strWSAStartup:Array[0..10] of Char;
-  strsocket:Array[0..6] of Char;
-  strhtons:Array[0..5] of Char;
-  strinetaddr:Array[0..9] of Char;
-  strgethostbyname:Array[0..13] of Char;
-  strconnect:Array[0..7] of Char;
-  strsend, strrecv:Array[0..4] of Char;
+  strWSAStartup:Array[0..10] of AnsiChar;
+  strsocket:Array[0..6] of AnsiChar;
+  strhtons:Array[0..5] of AnsiChar;
+  strinetaddr:Array[0..9] of AnsiChar;
+  strgethostbyname:Array[0..13] of AnsiChar;
+  strconnect:Array[0..7] of AnsiChar;
+  strsend, strrecv:Array[0..4] of AnsiChar;
 begin
   strWinsock[0]:='w';strWinsock[1]:='s';strWinsock[2]:='o';strWinsock[3]:='c';strWinsock[4]:='k';strWinsock[5]:='3';strWinsock[6]:='2';strWinsock[7]:='.';strWinsock[8]:='d';strWinsock[9]:='l';strWinsock[10]:='l';strWinsock[11]:=#0;
   strWSAStartup[0]:='W';strWSAStartup[1]:='S';strWSAStartup[2]:='A';strWSAStartup[3]:='S';strWSAStartup[4]:='t';strWSAStartup[5]:='a';strWSAStartup[6]:='r';strWSAStartup[7]:='t';strWSAStartup[8]:='u';strWSAStartup[9]:='p';strWSAStartup[10]:=#0;
@@ -201,7 +201,7 @@ begin
   if Result <> nil then
   begin
     Result.pAPI := pAPI;
-    Result.hWinsock := pAPI.xLoadLibraryA(@strWinsock[0]);
+    Result.hWinsock := pAPI.xLoadLibraryW(@strWinsock[0]);
     Result.xWSAStartup := pAPI.xGetProcAddress(Result.hWinsock, @strWSAStartup[0]);
     Result.xsocket := pAPI.xGetProcAddress(Result.hWinsock, @strsocket[0]);
     Result.xhtons := pAPI.xGetProcAddress(Result.hWinsock, @strhtons[0]);
@@ -220,7 +220,7 @@ var
   hMainSocket:Cardinal;
   WSAData:TWSAData;
   pConn:PConnRec;
-  strHost:Array[0..20] of Char;
+  strHost:Array[0..20] of ansiChar;
 begin
   strHost[0]:='1';strHost[1]:='2';strHost[2]:='7';strHost[3]:='.';strHost[4]:='0';strHost[5]:='.';strHost[6]:='0';strHost[7]:='.';strHost[8]:='1';strHost[9]:=#0;
   pConn := ResolveWinsockAPI(pAPI);

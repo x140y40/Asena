@@ -13,7 +13,7 @@ type
     xAllocMem:function(pAPI:Pointer; dwSize:Cardinal):Pointer;stdcall;
     xFreeMem:procedure(pAPI:Pointer; pData:Pointer);stdcall;
     xExitProcess:procedure(uExitCode: UINT); stdcall;
-    xLoadLibraryA:function(lpLibFileName: PChar): Cardinal; stdcall;
+    xLoadLibraryW:function(lpLibFileName: PChar): Cardinal; stdcall;
     xMessageBoxW:function(hWnd: HWND; lpText, lpCaption: PWideChar; uType: UINT): Integer; stdcall;
     xVirtualAlloc:function(lpvAddress: Pointer; dwSize, flAllocationType, flProtect: DWORD): Pointer; stdcall;
     xGetModuleFileNameW:function(hModule: HINST; lpFilename: PWideChar; nSize: DWORD): DWORD; stdcall;

