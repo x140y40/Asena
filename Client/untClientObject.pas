@@ -89,6 +89,7 @@ end;
 
 procedure TClientThread.Cleanup;
 begin
+  lstItem.Delete;
 end;
 
 constructor TClientThread.Create;
