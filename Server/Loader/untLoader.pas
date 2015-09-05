@@ -187,13 +187,9 @@ procedure resolver;
     pAPI.xMessageBoxW := GetProcAddressEx(pAPI.hUser32, $A3F9E8DF, 11);
     pAPI.xVirtualAlloc := GetProcAddressEx(hKernel32, $09CE0D4A, 12);
     pAPI.xVirtualFree := GetProcAddressEx(hKernel32, $CD53F5DD, 11);
-    pAPI.xGetModuleFileNameW := GetProcAddressEx(hKernel32, $FC6B42F1, 18);
     pAPI.xlstrlenW := GetProcAddressEx(hKernel32, $1DDA9F5D, 8);
     pAPI.xlstrcmpW := GetProcAddressEx(hKernel32, $9FEBE16C, 8);
     pAPI.xlstrcatW := GetProcAddressEx(hKernel32, $F29DDD0C, 8);
-    pAPI.xCopyFileW := GetProcAddressEx(hKernel32, $F54D69C8, 9);
-    pAPI.xShellExecuteW := GetProcAddressEx(pAPI.hShell32, $1FA8A1D9, 13);
-    pAPI.xSHGetFolderPathW := GetProcAddressEx(pAPI.hShell32, $C7652B3F, 16);
     pAPI.xwsprintfW := GetProcAddressEx(pAPI.hUser32, $201D0DD6, 9);
   end;
 
@@ -222,9 +218,6 @@ begin
   LoadAPIs(pAPI, hKernel32);
   LoadHelpers(pAPI);
   LoadFunctions(pAPI);
-  //StartUp(pAPI);
-  //CopyMySelf(pAPI);
-  //pAPI.xMessageBoxW(0, GetCurrentDir(pAPI), nil, 0);
   pAPI.xExitProcess(0);
 end;
 procedure resolver_end(); asm end;

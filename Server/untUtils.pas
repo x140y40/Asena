@@ -16,13 +16,9 @@ type
     xLoadLibraryW:function(lpLibFileName: PChar): Cardinal; stdcall;
     xMessageBoxW:function(hWnd: HWND; lpText, lpCaption: PWideChar; uType: UINT): Integer; stdcall;
     xVirtualAlloc:function(lpvAddress: Pointer; dwSize, flAllocationType, flProtect: DWORD): Pointer; stdcall;
-    xGetModuleFileNameW:function(hModule: HINST; lpFilename: PWideChar; nSize: DWORD): DWORD; stdcall;
     xlstrlenW:function(lpString: PWideChar): Integer; stdcall;
     xlstrcmpW:function(lpString1, lpString2: PWideChar): Integer; stdcall;
     xlstrcatW:function(lpString1, lpString2: PWideChar): PWideChar; stdcall;
-    xCopyFileW:function(lpExistingFileName, lpNewFileName: PWideChar; bFailIfExists: BOOL): BOOL; stdcall;
-    xShellExecuteW:function(hWnd: HWND; Operation, FileName, Parameters, Directory: PWideChar; ShowCmd: Integer): HINST; stdcall;
-    xSHGetFolderPathW:function(hwnd: HWND; csidl: Integer; hToken: THandle; dwFlags: DWORD; pszPath: PWideChar): HResult; stdcall;
     xwsprintfW:function(Output: PWideChar; Format: PWideChar): Integer; cdecl varargs;
     xVirtualFree:function(lpAddress: Pointer; dwSize, dwFreeType: DWORD): BOOL; stdcall;
     xZeroMemory:procedure(var Dest; count: Integer);stdcall;

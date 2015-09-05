@@ -19,9 +19,9 @@ type
     procedure CreateSectionHeader;
   protected
   public
-    procedure AddFunction(pFunc:Pointer; dwSize:Cardinal);
+    procedure AddFunction(pFunc, pFuncEnd:Pointer);
     procedure FixSectionLen;
-    procedure CustomizeLoader(pFunc:DWORD);
+    procedure CustomizeLoader;
     procedure CreatePEBase;
     procedure SaveFile(strFile:String);
     constructor Create;
@@ -91,7 +91,7 @@ var
   dwSpace:  Cardinal;
   pBuff:    Pointer;
 const
-  szText:   string = '.text';
+  szText:   ansistring = '.text';
 begin
   FillChar(ISH, 40, $0);
   CopyMemory(@ISH.Name[0], @szText[1], Length(szText));
@@ -111,8 +111,11 @@ begin
   FreeMem(pBuff);
 end;
 
-procedure TPEFile.AddFunction(pFunc:Pointer; dwSize:Cardinal);
+procedure TPEFile.AddFunction(pFunc, pFuncEnd:Pointer);
+var
+  dwSize:Cardinal;
 begin
+  dwSize := DWORD(pFuncEnd) - DWORD(pFunc);
   dwSizeAll := dwSizeAll + dwSize;
   mFile.Seek(0, soEnd);
   mFile.WriteBuffer(pFunc^, dwSize);

