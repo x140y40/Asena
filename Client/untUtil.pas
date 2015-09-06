@@ -1,16 +1,20 @@
-unit untUtils;
+unit untUtil;
 
 interface
 
 uses
   Windows,
+
   Classes;
 
 type
   LPSocketHeader = ^TSocketHeader;
   TSocketHeader = packed Record
-    dwSocketLen: DWORD;
-    bSocketCmd: Byte;
+    bCommand: Byte;
+    dwStreamID: DWORD;
+    dwPacketLen: DWORD;
+    dwDecompressedLen: DWORD;
+    dwTotalLen: DWORD;
   end;
 
 Function Explode(sDelimiter: String; sSource: String): TStringList;

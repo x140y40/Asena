@@ -4,8 +4,9 @@ uses
   Vcl.Forms,
   Unit1 in 'Unit1.pas' {Form1},
   untClientObject in 'untClientObject.pas',
-  untUtils in 'untUtils.pas',
-  untCommands in 'untCommands.pas';
+  untUtil in 'untUtil.pas',
+  untCommands in 'untCommands.pas',
+  untUtils in '..\Server\untUtils.pas';
 
 {$R *.res}
 

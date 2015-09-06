@@ -15,10 +15,10 @@ Done
 - client/server
 - upgrade to Delphi XE 8
 - compression 
+- shellcode-parser/packager
 
 Todo
 --------------
-- shellcode-parser/packager
 - 64-bit support
 - documentation
 - compression of function-layers

