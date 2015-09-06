@@ -23,6 +23,9 @@ type
     xVirtualFree:function(lpAddress: Pointer; dwSize, dwFreeType: DWORD): BOOL; stdcall;
     xZeroMemory:procedure(var Dest; count: Integer);stdcall;
     xCopyMemory:procedure(Destination: Pointer; Source: Pointer; Length: DWORD);stdcall;
+    xRtlGetCompressionWorkSpaceSize: function (CompressionFormatAndEngine: ULONG; CompressBufferWorkSpaceSize, CompressFragmentWorkSpaceSize : PULONG): Cardinal; stdcall; external ntdll name 'RtlGetCompressionWorkSpaceSize';
+    xRtlCompressBuffer:function(CompressionFormatAndEngine: ULONG; SourceBuffer: Pointer; SourceBufferLength: ULONG; DestinationBuffer: Pointer; DestinationBufferLength: ULONG;SourceChunkSize: ULONG; pDestinationSize: PULONG; WorkspaceBuffer: Pointer): Cardinal; stdcall; external ntdll name 'RtlCompressBuffer';
+    xRtlDeCompressBuffer:function (CompressionFormatAndEngine:ULONG; DestinationBuffer: Pointer; DestinationBufferLength: ULONG; SourceBuffer: Pointer; SourceBufferLength: ULONG;pDestinationSize: PULONG): Cardinal; stdcall; external ntdll name 'RtlDecompressBuffer';
   end;
   PAPIRec = ^TAPIRec;
 

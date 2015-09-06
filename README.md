@@ -14,9 +14,12 @@ Done
 - connection protocol
 - client/server
 - upgrade to Delphi XE 8
+- compression 
 
 Todo
 --------------
 - shellcode-parser/packager
 - 64-bit support
 - documentation
+- compression of function-layers
+- compression of communication
