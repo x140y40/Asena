@@ -7,7 +7,7 @@ uses
 
 type
   TAPIRec = packed record
-    hKernel32, hUser32, hShell32, hShFolder, hAdvapi32: Cardinal;
+    hKernel32, hUser32, hShell32, hShFolder, hAdvapi32, hNtdll: Cardinal;
     xGetProcAddressEx:function(hBase, hHash, dwLen:Cardinal):Pointer;stdcall;
     xGetProcAddress:function(hModule: HMODULE; lpProcName: LPCSTR): FARPROC; stdcall;
     xAllocMem:function(pAPI:Pointer; dwSize:Cardinal):Pointer;stdcall;
@@ -23,9 +23,9 @@ type
     xVirtualFree:function(lpAddress: Pointer; dwSize, dwFreeType: DWORD): BOOL; stdcall;
     xZeroMemory:procedure(var Dest; count: Integer);stdcall;
     xCopyMemory:procedure(Destination: Pointer; Source: Pointer; Length: DWORD);stdcall;
-    xRtlGetCompressionWorkSpaceSize: function (CompressionFormatAndEngine: ULONG; CompressBufferWorkSpaceSize, CompressFragmentWorkSpaceSize : PULONG): Cardinal; stdcall; external ntdll name 'RtlGetCompressionWorkSpaceSize';
-    xRtlCompressBuffer:function(CompressionFormatAndEngine: ULONG; SourceBuffer: Pointer; SourceBufferLength: ULONG; DestinationBuffer: Pointer; DestinationBufferLength: ULONG;SourceChunkSize: ULONG; pDestinationSize: PULONG; WorkspaceBuffer: Pointer): Cardinal; stdcall; external ntdll name 'RtlCompressBuffer';
-    xRtlDeCompressBuffer:function (CompressionFormatAndEngine:ULONG; DestinationBuffer: Pointer; DestinationBufferLength: ULONG; SourceBuffer: Pointer; SourceBufferLength: ULONG;pDestinationSize: PULONG): Cardinal; stdcall; external ntdll name 'RtlDecompressBuffer';
+    xRtlGetCompressionWorkSpaceSize: function (CompressionFormatAndEngine: ULONG; CompressBufferWorkSpaceSize, CompressFragmentWorkSpaceSize : PULONG): Cardinal; stdcall;
+    xRtlCompressBuffer:function(CompressionFormatAndEngine: ULONG; SourceBuffer: Pointer; SourceBufferLength: ULONG; DestinationBuffer: Pointer; DestinationBufferLength: ULONG;SourceChunkSize: ULONG; pDestinationSize: PULONG; WorkspaceBuffer: Pointer): Cardinal; stdcall;
+    xRtlDeCompressBuffer:function (CompressionFormatAndEngine:ULONG; DestinationBuffer: Pointer; DestinationBufferLength: ULONG; SourceBuffer: Pointer; SourceBufferLength: ULONG;pDestinationSize: PULONG): Cardinal; stdcall;
   end;
   PAPIRec = ^TAPIRec;
 

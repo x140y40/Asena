@@ -3,7 +3,7 @@
         <ProjectGuid>{9E3E4BA5-9875-4C59-8EC9-3AFCCBF6B5BC}</ProjectGuid>
         <MainSource>Project1.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <TargetedPlatforms>1</TargetedPlatforms>
         <AppType>Console</AppType>
         <FrameworkType>None</FrameworkType>
@@ -92,7 +92,6 @@
         <DCCReference Include="Utils\untPE.pas"/>
         <DCCReference Include="Functions\untConnection.pas"/>
         <DCCReference Include="Functions\untMutex.pas"/>
-        <DCCReference Include="Functions\untCompression.pas"/>
         <BuildConfiguration Include="Debug">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
@@ -136,6 +135,12 @@
                     </Platform>
                 </DeployFile>
                 <DeployFile LocalName="Project1.exe" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>Project1.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Project1.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>Project1.exe</RemoteName>
                         <Overwrite>true</Overwrite>
