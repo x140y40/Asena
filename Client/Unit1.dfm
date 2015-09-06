@@ -38,6 +38,7 @@ object Form1: TForm1
     RowSelect = True
     TabOrder = 0
     ViewStyle = vsReport
+    OnDblClick = ListView1DblClick
   end
   object Panel1: TPanel
     Left = 0
@@ -83,7 +84,7 @@ object Form1: TForm1
     OnClientDisconnect = ServerSocket1ClientDisconnect
     OnClientRead = ServerSocket1ClientRead
     OnClientError = ServerSocket1ClientError
-    Left = 184
-    Top = 112
+    Left = 480
+    Top = 176
   end
 end

