@@ -107,10 +107,13 @@ begin
   if listview1.Selected <> nil then
   begin
     tempThread := TClientThread(listview1.Selected.SubItems.Objects[0]);
-    tempFormControl := TForm3.Create(nil);
-    tempFormControl.Show;
-    tempFormControl.InitializeForm(tempThread);
-    tempThread.frmControl := tempFormControl;
+    if Assigned(tempthread.frmControl) = false then
+    begin
+      tempFormControl := TForm3.Create(nil);
+      tempFormControl.InitializeForm(tempThread);
+      tempThread.frmControl := tempFormControl;
+    end;
+    TForm3(tempThread.frmControl).Show;
   end;
 end;
 

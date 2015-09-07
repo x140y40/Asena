@@ -61,7 +61,39 @@ begin
         SetString(tempGUIString, PChar(mBuff), dwLen div 2);
         if Assigned(Self.frmControl) then
         begin
-          TForm2(TForm3(Self.frmControl).frmFilemanager).cmbDrives.Items.Add(tempGUIString);
+          TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
+        end;
+      end;
+    CMD_LIST_DIR_START:
+      begin
+        tempGUIString := '';
+        if Assigned(Self.frmControl) then
+        begin
+          TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
+        end;
+      end;
+    CMD_LIST_DIR_WRITE:
+      begin
+        SetString(tempGUIString, PChar(mBuff), dwLen div 2);
+        if Assigned(Self.frmControl) then
+        begin
+          TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
+        end;
+      end;
+    CMD_LIST_DIR_FINISHED:
+      begin
+        tempGUIString := '';
+        if Assigned(Self.frmControl) then
+        begin
+          TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
+        end;
+      end;
+    CMD_LIST_DIR_ERROR:
+      begin
+        tempGUIString := '';
+        if Assigned(Self.frmControl) then
+        begin
+          TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
         end;
       end;
   end;
@@ -122,12 +154,18 @@ begin
   pSocketHeader := @Data[1];
   DataSize := pSocketHeader.dwPacketLen;
   bByte := pSocketHeader.bCommand;
-  Delete(Data,1, SizeOf(TSocketHeader));
-  dwBuffLen := Length(Data);
+  dwBuffLen := Length(Data) - SizeOf(TSocketHeader);
+  Outputdebugstring(PChar('-------------------'));
+  Outputdebugstring(PChar('ReadData() called'));
+  Outputdebugstring(PChar('Datasize: ' + inttostr(DataSize)));
+  Outputdebugstring(PChar('dwBuffLen: ' + inttostr(dwBuffLen)));
   if DataSize > dwBuffLen then exit;
+  Delete(Data,1, SizeOf(TSocketHeader));
   mData := Copy(Data,1,DataSize);
   Delete(Data,1, DataSize);
   //Dec(DataSize);
+  Outputdebugstring(PChar('New Packet!'));
+  Outputdebugstring(PChar('mData: ' + mData));
   ParsePacket(@mData[1], DataSize, bByte);
   if Length(Data) > 0 then begin
     ReadData;

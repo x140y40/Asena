@@ -31,7 +31,6 @@ object Form3: TForm3
       000100000001074D0061006E0061006700650072003400000000000000000000
       00FFFFFFFFFFFFFFFF000000000000000000000000010B460069006C0065006D
       0061006E006100670065007200}
-    ExplicitHeight = 637
   end
   object PageControl1: TPageControl
     Left = 193
@@ -40,10 +39,6 @@ object Form3: TForm3
     Height = 618
     Align = alClient
     TabOrder = 1
-    ExplicitLeft = 264
-    ExplicitTop = 64
-    ExplicitWidth = 289
-    ExplicitHeight = 193
   end
   object StatusBar1: TStatusBar
     Left = 0
@@ -51,16 +46,15 @@ object Form3: TForm3
     Width = 1067
     Height = 19
     Panels = <>
-    ExplicitLeft = 744
-    ExplicitTop = 552
-    ExplicitWidth = 0
+    SimplePanel = True
+    SimpleText = '-'
   end
   object ImageList1: TImageList
     ColorDepth = cd32Bit
     Left = 480
     Top = 216
     Bitmap = {
-      494C010101000800140010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010101000800180010001000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       000000000000000000000000000000000000000000120000002C001A279C0033
       4DBF50452CE72D3E3BD700334DBF00334DBF00334DBF00334DBF00334DBF0033

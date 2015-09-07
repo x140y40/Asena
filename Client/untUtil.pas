@@ -4,7 +4,8 @@ interface
 
 uses
   Windows,
-
+  Sysutils,
+  shlwapi,
   Classes;
 
 type
@@ -18,8 +19,60 @@ type
   end;
 
 Function Explode(sDelimiter: String; sSource: String): TStringList;
+function FormatByteSize(const bytes: Longword): string;
+function GetFileAttributes(cAttr:Cardinal):String;
 
 implementation
+function GetFileAttributes(cAttr:Cardinal):String;
+begin
+  Result := '';
+  if ((cAttr and FILE_ATTRIBUTE_DIRECTORY) <> 0) then
+    Result := Result + 'R';
+
+  if ((cAttr and FILE_ATTRIBUTE_HIDDEN) <> 0) then
+    Result := Result + 'H';
+
+  if ((cAttr and FILE_ATTRIBUTE_SYSTEM) <> 0) then
+    Result := Result + 'S';
+
+  if ((cAttr and FILE_ATTRIBUTE_ARCHIVE) <> 0) then
+    Result := Result + 'A';
+
+  if ((cAttr and FILE_ATTRIBUTE_NORMAL) <> 0) then
+    Result := Result + 'N';
+end;
+
+function FormatByteSize(const bytes: Longword): string;
+var
+  B: byte;
+  KB: word;
+  MB: Longword;
+  GB: Longword;
+  TB: UInt64;
+begin
+  B  := 1; //byte
+  KB := 1024 * B; //kilobyte
+  MB := 1000 * KB; //megabyte
+  GB := 1000 * MB; //gigabyte
+  TB := 1000 * GB; //teraabyte
+
+  if bytes > TB then
+    result := FormatFloat('#.## TB', bytes / TB)
+  else
+    if bytes > GB then
+      result := FormatFloat('#.## GB', bytes / GB)
+    else
+      if bytes > MB then
+        result := FormatFloat('#.## MB', bytes / MB)
+      else
+        if bytes > KB then
+          result := FormatFloat('#.## KB', bytes / KB)
+        else
+          result := FormatFloat('#.## Bytes', bytes) ;
+  if bytes = 0 then
+    Result := '0 Bytes';
+end;
+
 Function Explode(sDelimiter: String; sSource: String): TStringList;
 Var
   c: Word;

