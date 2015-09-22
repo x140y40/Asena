@@ -5,7 +5,8 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls,
-  System.Win.ScktComp, untClientObject, untCommands, untUtils, untControl;
+  System.Win.ScktComp, untClientObject, untCommands, untUtils, untControl,
+  System.ImageList, Vcl.ImgList, Vcl.Menus;
 
 type
   TForm1 = class(TForm)
@@ -15,6 +16,9 @@ type
     ServerSocket1: TServerSocket;
     Button2: TButton;
     Button3: TButton;
+    ilFlags: TImageList;
+    PopupMenu1: TPopupMenu;
+    OpenCommandcenter1: TMenuItem;
     procedure ServerSocket1ClientConnect(Sender: TObject;
       Socket: TCustomWinSocket);
     procedure Button1Click(Sender: TObject);
@@ -125,6 +129,7 @@ Begin
   ClientThread := TClientThread.Create(True);
   ClientThread.mySocket := Socket;
   Socket.Data := ClientThread;
+  ClientThread.RequestInformation();
 end;
 
 procedure TForm1.ServerSocket1ClientDisconnect(Sender: TObject;

