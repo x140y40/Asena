@@ -44,8 +44,6 @@ object Form1: TForm1
     TabOrder = 0
     ViewStyle = vsReport
     OnDblClick = ListView1DblClick
-    ExplicitWidth = 714
-    ExplicitHeight = 305
   end
   object Panel1: TPanel
     Left = 0
@@ -54,8 +52,6 @@ object Form1: TForm1
     Height = 41
     Align = alBottom
     TabOrder = 1
-    ExplicitTop = 305
-    ExplicitWidth = 714
     object Button1: TButton
       Left = 8
       Top = 6
@@ -64,24 +60,6 @@ object Form1: TForm1
       Caption = 'Listen'
       TabOrder = 0
       OnClick = Button1Click
-    end
-    object Button2: TButton
-      Left = 103
-      Top = 6
-      Width = 89
-      Height = 27
-      Caption = 'SendShell'
-      TabOrder = 1
-      OnClick = Button2Click
-    end
-    object Button3: TButton
-      Left = 198
-      Top = 6
-      Width = 89
-      Height = 27
-      Caption = 'CallShell'
-      TabOrder = 2
-      OnClick = Button3Click
     end
   end
   object ServerSocket1: TServerSocket
@@ -101,7 +79,7 @@ object Form1: TForm1
     Left = 560
     Top = 188
     Bitmap = {
-      494C010194000801080110001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C0101940008010C0110001100FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000008602000001002000000000000086
       0200000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

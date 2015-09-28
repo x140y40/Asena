@@ -79,6 +79,7 @@ var
   lstTokens:TStringList;
   tempGUIString:String;
 begin
+  tempGUIString := '';
   case bCMD of
     CMD_ONLINE:
       begin
@@ -112,7 +113,6 @@ begin
       end;
     CMD_LIST_DIR_START:
       begin
-        tempGUIString := '';
         if Assigned(Self.frmControl) then
         begin
           TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
@@ -128,7 +128,6 @@ begin
       end;
     CMD_LIST_DIR_FINISHED:
       begin
-        tempGUIString := '';
         if Assigned(Self.frmControl) then
         begin
           TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
@@ -136,7 +135,20 @@ begin
       end;
     CMD_LIST_DIR_ERROR:
       begin
-        tempGUIString := '';
+        if Assigned(Self.frmControl) then
+        begin
+          TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
+        end;
+      end;
+    CMD_FILE_DELETE_OK:
+      begin
+        if Assigned(Self.frmControl) then
+        begin
+          TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
+        end;
+      end;
+    CMD_FILE_DELETE_FAIL:
+      begin
         if Assigned(Self.frmControl) then
         begin
           TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);

